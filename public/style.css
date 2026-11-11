@@ -251,3 +251,19 @@ table.kv th { color: var(--muted); font-weight: 400; }
 .compare-table td.anomaly { color: var(--fault-text); font-weight: 700; }
 .compare-table td.mono { font-family: var(--mono); }
 details summary { cursor: pointer; color: var(--accent); margin: 0.5rem 0; }
+/* consistent hashing */
+.ring-split { grid-template-columns: minmax(0, 28rem) minmax(14rem, 1fr); }
+.chart .ring-base { fill: none; stroke: var(--line); stroke-width: 10; }
+.chart .arc { fill: none; stroke: var(--c); stroke-width: 10; opacity: 0.85; }
+.chart .server-dot { fill: var(--panel); stroke: var(--c); stroke-width: 2.5; }
+.chart .server-label { font-weight: 700; fill: var(--text); font-size: 12px; }
+.chart .key-dot { fill: var(--c); opacity: 0.75; }
+.chart .key-dot.moved { opacity: 1; stroke: var(--text); stroke-width: 1.2; }
+.chart .ring-center { font-size: 14px; font-weight: 700; fill: var(--text); }
+.loads h3 { margin-top: 0; }
+.bar-row { display: grid; grid-template-columns: 1.5rem 1fr 3rem; gap: 0.5rem; align-items: center; margin: 0.25rem 0; }
+.bar-label { font-weight: 700; }
+.bar-track { background: var(--line); border-radius: 3px; height: 0.8rem; overflow: hidden; }
+.bar { display: block; height: 100%; background: var(--c); }
+.bar-value { text-align: right; font-variant-numeric: tabular-nums; color: var(--muted); }
+.mono { font-family: var(--mono); }
