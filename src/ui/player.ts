@@ -11,6 +11,9 @@ export interface Player {
   destroy(): void;
 }
 
+// With several players on one page, the keyboard drives the one used last (the first one until then).
+let active: object | null = null;
+
 export function createPlayer(render: (index: number) => void, options: { label?: string } = {}): Player {
   let count = 0;
   let index = 0;
@@ -60,8 +63,14 @@ export function createPlayer(render: (index: number) => void, options: { label?:
     play.textContent = "▶";
   }
 
+  const self = {};
+  active ??= self;
+  element.addEventListener("pointerdown", () => (active = self));
+  element.addEventListener("focusin", () => (active = self));
+
   // Keyboard: arrows, space, Home/End — unless the user is typing in a field.
   function onKey(e: KeyboardEvent): void {
+    if (active !== self) return;
     const target = e.target as HTMLElement | null;
     if (target && ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName) && target !== slider) return;
     if (e.key === "ArrowRight") go(index + 1);
@@ -88,6 +97,7 @@ export function createPlayer(render: (index: number) => void, options: { label?:
     destroy() {
       stop();
       document.removeEventListener("keydown", onKey);
+      if (active === self) active = null;
     },
   };
 }
