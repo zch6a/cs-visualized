@@ -21,6 +21,19 @@ LRU 12, OPT 9 faults on Silberschatz's reference string) and against the propert
 | Distributed systems | Consistent hashing: the ring, virtual nodes, keys moved vs hash mod N | ✅ |
 | Distributed systems | Raft: elections, replication, commitment through crashes and partitions | ✅ |
 
+## What each page shows
+
+Every number here is what the page shows on its presets, and each one is pinned by a test.
+
+- **Page replacement** — on Silberschatz's reference string with 3 frames: FIFO 15 faults, LRU 12, OPT 9. And Bélády's anomaly: FIFO goes from 9 faults with 3 frames to 10 with 4.
+- **CPU scheduling** — the convoy effect: the same three jobs average 17 ticks of waiting in arrival order, 3 if the long one goes last. SRTF has the lowest average wait on every one of 30 random workloads.
+- **TCP congestion control** — Reno's sawtooth on a full link delivers about three quarters of its capacity; two AIMD flows halve the gap between them at every loss until they share equally.
+- **Reliable delivery** — one lost segment: Go-Back-N resends four segments, Selective Repeat one, and TCP one, sooner, after three duplicate ACKs.
+- **B+ tree** — every invariant (sorted nodes, fill limits, all leaves at one depth) holds after every single step, for orders 3–7 and any insertion order.
+- **Transaction isolation** — a lost update at Read Committed (x ends at 11, not 12, and nobody is told); write skew passing snapshot isolation; Serializable aborting it.
+- **Consistent hashing** — going from 5 servers to 6 moves about 1/6 of the keys on the ring, and 5/6 with `hash mod N`; with 200 points per server the busiest server stays under 1.1× the average load, with one point it is over 1.3×.
+- **Raft** — a checker verifies the paper's safety properties on every tick of 60 random runs with crashes and partitions; removing the Figure 8 rule breaks one of 3,000 such runs, which is now a test.
+
 ## Run it
 
 ```bash

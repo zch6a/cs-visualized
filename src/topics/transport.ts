@@ -23,7 +23,7 @@ export const transport: Topic = {
     const segInput = num(12, 1, 40, "Segments");
     const winInput = num(4, 1, 20, "Window");
     const delayInput = num(3, 1, 10, "One-way delay");
-    const timeoutInput = num(14, 2, 100, "Timeout");
+    const timeoutInput = num(14, 6, 100, "Timeout");
     const dropInput = h("input", { type: "text", value: "4", class: "short", "aria-label": "Data segments lost" });
     const dropAckInput = h("input", { type: "text", value: "", class: "short", "aria-label": "ACK numbers lost" });
     const rateInput = num(0, 0, 50, "Random loss percent");
@@ -43,7 +43,7 @@ export const transport: Topic = {
 
     replace(root,
       h("h1", {}, "Reliable delivery"),
-      prose("The network may lose any packet. TCP still hands the application every byte, once, in order. It does so with three ideas: number everything, have the receiver say what it got (ACKs), and resend what was not acknowledged in time. A *sliding window* lets several segments be in flight at once, so the sender is not idle for a whole round trip after each one."),
+      prose("The network may lose any packet. TCP still hands the application every byte, once, in order. It does so with three ideas: number everything, have the receiver say what it got (ACKs), and resend what was not acknowledged in time. A *sliding window* lets several segments be in flight at once, so the sender is not idle for a whole round trip after each one. The connection opens with a *handshake* (SYN, SYN-ACK, ACK: each side learns the other is there) and closes with FIN messages, one per direction. Segments are numbered from 0; a round trip is twice the one-way delay, and the timeout must be longer than that."),
       h("div", { class: "controls" },
         h("div", { class: "segments", role: "group", "aria-label": "Protocol" }, ...buttons)),
       h("div", { class: "controls" },
@@ -63,9 +63,9 @@ export const transport: Topic = {
       h("h2", {}, "Things to try"),
       h("ul", {},
         h("li", {}, prose("Lose segment 4 and switch between the three protocols: Go-Back-N resends 4 and everything after it in the window; Selective Repeat resends 4 alone; TCP resends 4 alone and sooner — count the duplicate ACKs that trigger it.")),
-        h("li", {}, prose("Clear the data losses and lose ACK 3 instead. Why does Go-Back-N not care, while Selective Repeat (lose ACK 2) has to resend?")),
+        h("li", {}, prose("ACK numbers mean different things here: in Go-Back-N and TCP, ACK n means *the next segment I need is n*; in Selective Repeat, ACK n means *I got segment n*. Clear the data losses and lose ACK 3: Go-Back-N and TCP resend nothing — the next ACK covers it. Switch to Selective Repeat: segment 3 must be resent. Why?")),
         h("li", {}, prose("Set the window to 1: *stop-and-wait*. How much longer does the transfer take, and what does that say about a 100 ms round trip on a fast link?")),
-        h("li", {}, prose("Make the timeout barely longer than a round trip and add random loss. Spurious retransmissions appear: the timer fires while the ACK is still on its way.")),
+        h("li", {}, prose("Set the timeout to exactly one round trip (6) and add random loss. Some resent segments are ones the server already had — from lost ACKs, and Go-Back-N's going back. Note that every message here takes exactly the same time, so a timer never fires *early*; real delays vary, which is why real TCP sets its timer to the measured round trip plus a margin.")),
       ),
     );
 

@@ -47,7 +47,7 @@ export const congestion: Topic = {
 
     replace(root,
       h("h1", {}, "TCP congestion control"),
-      prose("A TCP sender cannot see the network. It sees only what comes back: acknowledgements mean the path took what was sent; a missing one means a router somewhere dropped a packet because its queue was full. From that alone it must find how fast it can send — and share the link with everyone else doing the same. The *congestion window* (`cwnd`) is how many segments it lets be in flight per round trip."),
+      prose("A TCP sender cannot see the network. It sees only what comes back: acknowledgements mean the path took what was sent; a missing one means a router somewhere dropped a packet because its queue was full. From that alone it must find how fast it can send — and share the link with everyone else doing the same. The *congestion window* (`cwnd`) is how many segments it lets be in flight per round trip; `ssthresh`, the *slow-start threshold*, is where fast growth gives way to careful growth. A *duplicate ACK* is the receiver repeating its last acknowledgement because a later segment arrived before the one it is waiting for. The *timeout at round* control injects one outage where nothing gets through, independent of the link's capacity."),
       h("div", { class: "controls" },
         h("div", { class: "segments", role: "group", "aria-label": "Variant" }, ...buttons),
         h("label", {}, "Link capacity ", capacityInput, " segments per round trip"),
@@ -74,8 +74,8 @@ export const congestion: Topic = {
       fairNote,
       h("h2", {}, "Things to try"),
       h("ul", {},
-        h("li", {}, prose("Compare Tahoe and Reno on the same link: how much more does Reno deliver once it is in the sawtooth, and why exactly?")),
-        h("li", {}, prose("Set the initial ssthresh far above the capacity: slow start overshoots and the first loss comes from a huge window. Set it low: the connection crawls to the link's speed by +1 per round trip.")),
+        h("li", {}, prose("Compare Tahoe and Reno on the same link — set the timeout to 0 first, so only the link's own losses count. How much more does Reno deliver once it is in the sawtooth, and why exactly?")),
+        h("li", {}, prose("Set the initial ssthresh to 2: no slow start, and the connection crawls to the link's speed by +1 per round trip (round 24 instead of round 6). The default, 32, is already above the link, so slow start overshoots and loses at round 6; raising it further changes nothing, because doubling can never overshoot by more than 2×. (Real TCP would lose many segments in that overshoot; this model loses one.)")),
         h("li", {}, prose("Why multiplicative *decrease* but additive *increase*? Try the opposite in your head with the two-flow plot: would the gap ever shrink?")),
       ),
     );

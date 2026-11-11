@@ -30,6 +30,13 @@ function renderHome(): void {
   replace(main,
     h("h1", {}, "Computer science you can step through"),
     prose("Each page is a small, tested simulation of something every engineer is taught and few have watched happen: step forward and back, change the input, and see exactly where the textbook answer comes from."),
+    h("div", { class: "howto" },
+      h("h2", {}, "How to use a page"),
+      h("ol", {},
+        h("li", {}, prose("Pick a *preset* — each one is set up to show one thing (an anomaly, a failure, a textbook example).")),
+        h("li", {}, prose("Step through it with the player: `←` `→` step; with the player focused, `Home` `End` jump and `space` plays — or use the buttons and the slider. Every step says what happened and why.")),
+        h("li", {}, prose("Change the input and watch the outcome move. The table at the bottom of each page compares every policy or level on the same input.")),
+        h("li", {}, prose("*Things to try* at the end are questions with answers you can find on the page.")))),
     ...AREAS.filter((area) => TOPICS.some((t) => t.area === area)).map((area) =>
       h("section", { class: "cards" }, h("h2", {}, area), ...TOPICS.filter((t) => t.area === area).map((t) =>
         h("a", { class: "card", href: `#/${t.id}` }, h("h3", {}, t.title), h("p", {}, t.blurb))))),

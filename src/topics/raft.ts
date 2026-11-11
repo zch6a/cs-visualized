@@ -5,9 +5,9 @@ import type { Topic } from "./topic.ts";
 
 const PRESETS: { name: string; script: string; about: string }[] = [
   { name: "Elect a leader, replicate", script: "40 client x=1\n46 client y=2\n52 client x=3", about: "Nobody is leader at first. The first server whose randomized timeout runs out asks for votes; with a majority it leads, and replicates three client commands." },
-  { name: "The leader crashes", script: "40 client a=1\n60 crash LEADER\n120 client b=2\n150 restart LEADER", about: "The leader dies after one command. The others notice the silence, elect a new leader in a higher term, and the committed entry survives. The old leader comes back as a follower." },
+  { name: "The leader crashes", script: "40 client a=1\n60 crash LEADER\n120 client b=2\n150 restart CRASHED", about: "The leader dies after one command. The others notice the silence, elect a new leader in a higher term, and the committed entry survives. The old leader comes back as a follower." },
   { name: "Split brain", script: "40 partition LEADER+MINORITY | REST\n46 client lost at LEADER\n110 client kept\n150 heal", about: "The network splits the leader, with as many servers as still make a minority, from the rest. The old leader keeps leading its side and accepts a write — but can never get it committed. The majority side elects its own leader and commits. When the network heals, the minority's entry is thrown away." },
-  { name: "Catch up after a crash", script: "30 crash E\n40 client p=1\n46 client q=2\n90 restart E", about: "A follower is down while two entries are committed. When it restarts, the leader's AppendEntries back up until they find where E's log agrees, and fill it in." },
+  { name: "Catch up after a crash", script: "40 client p=1\n50 crash FOLLOWER\n56 client q=2\n62 client r=3\n70 crash LEADER\n120 restart CRASHED\n150 restart CRASHED", about: "A follower goes down after the first entry; two more are committed without it; then the leader dies too. The new leader assumes every follower is up to date, so when the first one comes back its AppendEntries are refused — and the leader backs up one entry at a time until the logs agree, then fills in the rest." },
 ];
 
 const SIZE = 380;
@@ -42,7 +42,7 @@ export const raft: Topic = {
       } }, p.name))),
       about,
       h("details", {}, h("summary", {}, "Edit the events"),
-        prose("One per line: `40 client x=1` (to the leader), `40 client x=1 at B`, `60 crash A`, `90 restart A`, `50 partition A B | C D E`, `120 heal`. `LEADER` means whoever leads when the event happens, `LEADER+MINORITY` the leader plus the next servers up to the largest minority, `REST` everyone else."),
+        prose("One per line: `40 client x=1` (to the leader), `40 client x=1 at B`, `60 crash A`, `90 restart A`, `50 partition A B | C D E`, `120 heal`. Shorthand, resolved for each line at the moment its event happens: `LEADER` is whoever leads then, `FOLLOWER` the last live follower, `CRASHED` the server that has been down longest, `LEADER+MINORITY` the leader plus the next servers up to the largest minority, `REST` everyone else."),
         h("div", { class: "controls" }, h("label", {}, "Servers ", serversInput), h("label", {}, "Seed (election timeouts) ", seedInput)),
         scriptInput),
       error,
@@ -58,6 +58,13 @@ export const raft: Topic = {
         h("li", {}, prose("*A higher term always wins*: a leader that sees a newer term steps down at once. That is what ends split brain when the network heals.")),
         h("li", {}, prose("*Commit only entries of your own term by counting* (Figure 8 of the paper). The tests here found the failure without it: in one random run of crashes and partitions, a server committed an old-term entry that a later leader overwrote.")),
       ),
+      h("h2", {}, "Things to try"),
+      h("ul", {},
+        h("li", {}, prose("In *The leader crashes*, look for the election that fails: two candidates in the same term split the votes, nobody has a majority, and a later term decides. Randomized timeouts make this rare, not impossible.")),
+        h("li", {}, prose("Change the seed: a different server wins the first election. Why must the protocol work whichever one it is?")),
+        h("li", {}, prose("Crash three of five servers (`60 crash A`, `61 crash B`, `62 crash C`) and send a command: it can be appended, never committed. Restart one: it commits.")),
+        h("li", {}, prose("In *Split brain*, send a command to each side. Which one ends up in every log, and why can the other never be committed?")),
+      ),
     );
 
     rerun();
@@ -70,22 +77,48 @@ export const raft: Topic = {
         const n = Number(serversInput.value);
         if (!Number.isInteger(n) || n < 3 || n > 7) throw new RangeError("Servers: 3 to 7.");
         const ids = ["A", "B", "C", "D", "E", "F", "G"].slice(0, n);
-        // Resolve LEADER, LEADER+MINORITY and REST by probing: run up to that event and see who leads.
-        let script = scriptInput.value;
-        for (let pass = 0; pass < 5 && /LEADER|REST/.test(script); pass++) {
-          const line = script.split("\n").find((l) => /LEADER|REST/.test(l))!;
-          const at = Number(line.trim().split(/\s+/)[0]);
-          if (!Number.isInteger(at) || at < 1 || at >= 200) throw new SyntaxError(`"${line.trim()}": the tick must be a whole number from 1 to 199`);
-          const before = parseEvents(script.split("\n").filter((l) => !/LEADER|REST/.test(l) && Number(l.trim().split(/\s+/)[0]) < at).join("\n"));
-          const probe = simulate({ servers: n, ticks: at, seed: Number(seedInput.value), events: before });
-          const leader = probe.at(-1)!.servers.filter((x) => x.alive && x.role === "leader").sort((a, b) => b.term - a.term)[0]?.id;
-          if (!leader) throw new RangeError(`"${line.trim()}": there is no leader yet at tick ${at} — move the event later`);
-          // The largest minority containing the leader: ⌊(n − 1) / 2⌋ servers (2 of 5, 1 of 3 or 4).
-          const minority = Array.from({ length: Math.floor((n - 1) / 2) }, (_, i) => ids[(ids.indexOf(leader) + i) % n]!);
-          const rest = ids.filter((x) => !minority.includes(x));
-          script = script.replace(line, line.replace("LEADER+MINORITY", minority.join(" ")).replace("REST", rest.join(" ")).replace(/LEADER/g, leader));
-          script = script.replace(/LEADER/g, leader);
+        // Resolve the shorthand line by line, in tick order: probe-run everything before the line, see who
+        // leads, who follows and who crashed last, and substitute — for that line only.
+        const TOKENS = /LEADER|FOLLOWER|CRASHED|REST/;
+        const lines = scriptInput.value.split("\n").map((l) => l.trim()).filter((l) => l && !l.startsWith("#"));
+        const tickOf = (l: string) => Number(l.split(/\s+/)[0]);
+        const resolved: string[] = [];
+        for (const line of [...lines].sort((x, y) => tickOf(x) - tickOf(y))) {
+          if (!TOKENS.test(line)) {
+            resolved.push(line);
+            continue;
+          }
+          const at = tickOf(line);
+          if (!Number.isInteger(at) || at < 1 || at >= 200) throw new SyntaxError(`"${line}": the tick must be a whole number from 1 to 199`);
+          const before = resolved.filter((l) => tickOf(l) < at);
+          const probe = simulate({ servers: n, ticks: at, seed: Number(seedInput.value), events: parseEvents(before.join("\n")) }).at(-1)!;
+          const live = probe.servers.filter((x) => x.alive);
+          const leader = live.filter((x) => x.role === "leader").sort((x, y) => y.term - x.term)[0]?.id;
+          const follower = live.filter((x) => x.id !== leader).at(-1)?.id;
+          // CRASHED: the server that has been down longest (crashes minus restarts, oldest first).
+          const down: string[] = [];
+          for (const l of before) {
+            const m = l.match(/^\d+\s+(crash|restart)\s+([A-G])$/);
+            if (m?.[1] === "crash" && !down.includes(m[2]!)) down.push(m[2]!);
+            if (m?.[1] === "restart") down.splice(down.indexOf(m[2]!) >>> 0, down.includes(m[2]!) ? 1 : 0);
+          }
+          const crashed = down[0];
+          const need = (name: string, value: string | undefined) => {
+            if (!value) throw new RangeError(`"${line}": no ${name} at tick ${at} — move the event later`);
+            return value;
+          };
+          let out = line;
+          if (out.includes("LEADER+MINORITY")) {
+            const l = need("leader", leader);
+            const minority = Array.from({ length: Math.floor((n - 1) / 2) }, (_, i) => ids[(ids.indexOf(l) + i) % n]!);
+            out = out.replace("LEADER+MINORITY", minority.join(" ")).replace("REST", ids.filter((x) => !minority.includes(x)).join(" "));
+          }
+          if (out.includes("LEADER")) out = out.replace(/LEADER/g, need("leader", leader));
+          if (out.includes("FOLLOWER")) out = out.replace(/FOLLOWER/g, need("live follower", follower));
+          if (out.includes("CRASHED")) out = out.replace(/CRASHED/g, need("crashed server", crashed));
+          resolved.push(out);
         }
+        const script = resolved.join("\n");
         frames = simulate({ servers: n, ticks: 200, seed: Number(seedInput.value), events: parseEvents(script) });
         error.textContent = "";
       } catch (e) {
@@ -125,7 +158,7 @@ export const raft: Topic = {
       replace(logs, h("table", { class: "raft-logs" },
         h("thead", {}, h("tr", {}, h("th", { scope: "col" }, ""), ...Array.from({ length: maxLen }, (_, i) => h("th", { scope: "col" }, String(i + 1))))),
         h("tbody", {}, ...f.servers.map((sv) => h("tr", { class: sv.alive ? "" : "down" },
-          h("th", { scope: "row" }, `${sv.id}${sv.role === "leader" ? " ★" : ""}`),
+          h("th", { scope: "row" }, `${sv.id}${sv.role === "leader" && sv.alive ? " ★" : ""}`),
           ...Array.from({ length: maxLen }, (_, i) => {
             const e = sv.log[i];
             if (!e) return h("td", {});

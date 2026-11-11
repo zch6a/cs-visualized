@@ -26,6 +26,7 @@ export const scheduling: Topic = {
     let algorithm: Algorithm = "RR";
     let processes: Process[] = [];
     let result: Result | undefined;
+    let levels: number[] = [2, 4]; // the MLFQ slices of the run on screen (declared before the first run)
 
     const procInput = h("textarea", { rows: 6, spellcheck: "false", "aria-label": "Processes: name, arrival time, burst", class: "procs" }, PRESETS[0]!.text);
     const quantumInput = h("input", { type: "number", min: 1, max: 20, value: 3, "aria-label": "Quantum" });
@@ -49,7 +50,7 @@ export const scheduling: Topic = {
 
     replace(root,
       h("h1", {}, "CPU scheduling"),
-      prose("More processes want the CPU than there are CPUs. Every tick, the scheduler picks one of the ready processes to run. Pick well and short jobs finish fast and nobody starves; pick badly and a single long job holds everyone up. Each policy below is one answer to *who next?*"),
+      prose("More processes want the CPU than there are CPUs. (A process's *burst* is the CPU time it needs; to *preempt* is to take the CPU away from a process before it is done.) Every tick, the scheduler picks one of the ready processes to run. Pick well and short jobs finish fast and nobody starves; pick badly and a single long job holds everyone up. Each policy below is one answer to *who next?*"),
       h("div", { class: "controls stacked" },
         h("label", { class: "block" }, "Processes — name, arrival tick, CPU ticks needed:", procInput),
         h("div", { class: "presets" }, "Try: ", ...PRESETS.map((p) => h("button", { type: "button", class: "link", onclick: () => {
@@ -72,8 +73,9 @@ export const scheduling: Topic = {
       h("h2", {}, "Things to try"),
       h("ul", {},
         h("li", {}, prose("Load *The convoy* and compare FCFS with SJF: the same three jobs, average waiting 17 vs 3, only because of the order.")),
-        h("li", {}, prose("In round robin, set the quantum to 1, then to 30. Watch average *response* and *turnaround* move in opposite directions — and see what a huge quantum turns RR into.")),
-        h("li", {}, prose("Load *Interactive vs batch* and switch between FCFS, RR and MLFQ: which one gives the one-tick `ui` jobs a response time of 0? In MLFQ, why does `ui1` still wait a tick when `ui2` to `ui4` do not?")),
+        h("li", {}, prose("In round robin, set the quantum to 1, then to 10 or more (longer than every job's CPU time). Watch average *response* and *turnaround* move in opposite directions — and see what a long quantum turns RR into.")),
+        h("li", {}, prose("Load *Interactive vs batch* and switch between FCFS, RR and MLFQ: which one gives `ui2` to `ui4` a response time of 0? And why does `ui1` still wait a tick in MLFQ? (Then try SRTF.)")),
+        h("li", {}, prose("Starvation: in MLFQ, give a long job and a stream of one-tick jobs (`long 0 6`, then `s1 2 2`, `s2 4 2`, … every two ticks). With boost 0 the long job waits until the stream ends; set boost to 8 and it gets the CPU regularly.")),
         h("li", {}, prose("SRTF has the lowest average waiting time in the table, always. Why does no real kernel use it? (What would it need to know?)")),
       ),
     );
@@ -86,8 +88,6 @@ export const scheduling: Topic = {
       if (levels.some((l) => !Number.isInteger(l) || l < 1) || levels.length < 1 || levels.length > 4) throw new RangeError("Slices per level: one to four whole numbers, e.g. \"2 4\".");
       return { quantum: Number(quantumInput.value), levels, boost: Number(boostInput.value) };
     }
-
-    let levels: number[] = [2, 4]; // the MLFQ slices of the run on screen
 
     function run(at = 0): void {
       let opts: Options;

@@ -46,7 +46,7 @@ export const paging: Topic = {
 
     replace(root,
       h("h1", {}, "Page replacement"),
-      prose("A program's pages do not all fit in memory. When it touches a page that is not there — a *page fault* — the operating system loads it from disk, and if memory is full, something else has to go. Which page to evict is the whole question, and a bad answer costs a disk read every time."),
+      prose("Memory is divided into *frames*, slots that each hold one page of a program. A program's pages do not all fit in memory. When it touches a page that is not there — a *page fault* — the operating system loads it from disk, and if memory is full, something else has to go. Which page to evict is the whole question, and a bad answer costs a disk read every time."),
       h("div", { class: "controls" },
         h("label", {}, "Pages referenced, in order ", refsInput),
         h("label", {}, "Frames of memory ", framesInput),
@@ -63,12 +63,12 @@ export const paging: Topic = {
       note,
       stats,
       h("h2", {}, "Faults by policy and memory size"),
-      prose("The same reference string with 1 to 8 frames. Read across a row: more memory should never mean more faults — and for LRU and OPT it never does (they are *stack algorithms*: what fits in n frames always fits in n + 1). FIFO has no such guarantee. Load *Belady's anomaly* and look at its row."),
+      prose("The same reference string with 1 to 8 frames. Read across a row: more memory should never mean more faults — and for LRU and OPT it never does (they are *stack algorithms*: the pages kept with n frames are always a subset of those kept with n + 1). FIFO and Clock have no such guarantee. Load *Belady's anomaly* and look at their rows; then step through it at 3 frames and again at 4."),
       compare,
       h("h2", {}, "Things to try"),
       h("ul", {},
         h("li", {}, prose("Pick *A loop one page too big* and LRU: a loop over 4 pages in 3 frames faults on *every* reference — LRU always evicts exactly the page needed next. Now try OPT.")),
-        h("li", {}, prose("Find a reference string where Clock and LRU disagree. (Hint: Clock only knows *whether* a page was used since the hand last passed, not *when*.)")),
+        h("li", {}, prose("Clock and LRU already disagree on the default string: compare their choices at step 9. Why? (Hint: Clock only knows *whether* a page was used since the hand last passed, not *when*.) Can you find a string where Clock faults *less* than LRU?")),
         h("li", {}, prose("Why can no real kernel run OPT, and why do textbooks show it anyway?")),
       ),
     );

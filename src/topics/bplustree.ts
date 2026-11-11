@@ -41,8 +41,8 @@ export const bplustree: Topic = {
       h("h1", {}, "B+ tree"),
       prose("A database table can have millions of rows on disk, and reading from disk is slow — so an index must find a key by reading as few blocks as possible. A B+ tree does it in a handful: each node is one block holding many keys, so the tree is very wide and very shallow. Only the leaves hold the keys; the nodes above hold *separators* that say which way to go. The leaves are linked in order, so a range query is one descent and then a walk to the right."),
       h("div", { class: "controls" },
-        h("label", {}, "Order ", orderInput, " (at most order − 1 keys per node)"),
-        h("label", {}, "Insert, in order ", keysInput)),
+        h("label", {}, "Order ", orderInput, " (the most children an inner node can have; at most order − 1 keys per node)"),
+        h("label", {}, "Keys to insert, left to right ", keysInput)),
       h("div", { class: "presets" }, "Try: ", ...PRESETS.map((p) => h("button", { type: "button", class: "link", onclick: () => {
         keysInput.value = p.keys;
         rebuild();
@@ -58,7 +58,7 @@ export const bplustree: Topic = {
       note,
       h("h2", {}, "Why databases use it"),
       h("ul", {},
-        h("li", {}, prose("*Shallow.* With order 4 here, each node holds three keys. A real one holds hundreds — a 16 KB page of 8-byte keys — so four levels index billions of rows, and the top levels stay in memory.")),
+        h("li", {}, prose("*Shallow.* With order 4 here, each node holds at most three keys. A real one holds hundreds — a 16 KB page of 8-byte keys — so four levels index billions of rows, and the top levels stay in memory.")),
         h("li", {}, prose("*Always balanced.* Splits push keys *up*, and only the root can add a level, so every leaf is at the same depth: no unlucky insertion order makes some lookups slow.")),
         h("li", {}, prose("*Range scans are cheap.* `WHERE id BETWEEN 10 AND 26` descends once and then reads leaves left to right, which is why the leaves are linked.")),
       ),

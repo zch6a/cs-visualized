@@ -294,6 +294,12 @@ table.raft-logs thead th { color: var(--muted); font-weight: 400; }
 table.raft-logs tbody th { text-align: left; font-family: var(--sans); }
 table.raft-logs tr.down { opacity: 0.45; }
 table.raft-logs td.entry { border: 2px solid var(--c); border-radius: 4px; }
-table.raft-logs td.entry.committed { background: var(--c); color: var(--panel); font-weight: 700; }
+/* A tint of the term colour with normal text: white on the full colour fell to 2.8:1 contrast in light mode. */
+table.raft-logs td.entry.committed { background: color-mix(in srgb, var(--c) 38%, var(--panel)); color: var(--text); font-weight: 700; }
 .notes .notes-head { font-weight: 700; color: var(--muted); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; }
 .notes li.fresh { color: var(--accent); font-weight: 600; }
+
+.howto { border: 1px solid var(--line); border-radius: 10px; background: var(--panel); padding: 0.4rem 1.2rem 0.6rem; margin: 1rem 0 1.5rem; max-width: 46rem; }
+.howto h2 { margin-top: 0.6rem; }
+.howto ol { padding-left: 1.2rem; margin: 0; }
+.howto li p { margin: 0.2rem 0; }
