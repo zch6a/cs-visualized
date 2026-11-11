@@ -1,5 +1,6 @@
 // The site: a list of topics and a hash router (#/paging). Each topic builds its own page.
 
+import { bplustree } from "./topics/bplustree.ts";
 import { congestion } from "./topics/congestion.ts";
 import { paging } from "./topics/paging.ts";
 import { scheduling } from "./topics/scheduling.ts";
@@ -7,7 +8,7 @@ import { transport } from "./topics/transport.ts";
 import { AREAS, type Topic } from "./topics/topic.ts";
 import { h, prose, replace } from "./ui/dom.ts";
 
-const TOPICS: Topic[] = [paging, scheduling, congestion, transport];
+const TOPICS: Topic[] = [paging, scheduling, congestion, transport, bplustree];
 
 const nav = document.getElementById("nav")!;
 const main = document.getElementById("main")!;

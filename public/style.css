@@ -208,3 +208,20 @@ table.gantt td.future { background: none; }
 .dot.inflight::before { border-color: var(--accent); }
 .dot.usable::before { border: 1.5px dashed var(--accent); }
 .dot.buffered::before { background: var(--accent-soft); border-color: var(--accent); }
+/* B+ tree */
+.chart.tree { overflow-x: auto; }
+.chart.tree svg { margin: 0 auto; }
+.chart .node rect { fill: var(--panel); stroke: var(--muted); stroke-width: 1.2; }
+.chart .node.leaf rect { fill: var(--bg); }
+.chart .node.on rect { stroke: var(--accent); stroke-width: 2.5; }
+.chart .node.new rect { fill: var(--fault); stroke: var(--fault-text); }
+.chart .node .divider { stroke: var(--line); }
+.chart .key { fill: var(--text); font: 12px var(--mono); text-anchor: middle; }
+.chart .key.hot { fill: var(--accent); font-weight: 700; }
+.chart .key.empty-key { fill: var(--muted); }
+.chart .edge { stroke: var(--line); stroke-width: 1.2; }
+.chart .edge.on { stroke: var(--accent); stroke-width: 2.2; }
+.chart .leaf-link { stroke: var(--muted); stroke-width: 1; }
+.chart .leaf-link.on { stroke: var(--accent); stroke-width: 2; }
+.chart .arrowhead { fill: var(--muted); }
+.note p { margin: 0; }
