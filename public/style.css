@@ -122,3 +122,38 @@ sup.bit.on { color: var(--accent); font-weight: 700; }
 .compare-table .chosen { background: var(--accent-soft); }
 .compare-table td.anomaly { color: var(--warn); font-weight: 700; }
 .noscript { padding: 2rem; }
+
+/* categorical colours for processes / nodes: light and dark */
+:root { --c0: #4c78d8; --c1: #e0823d; --c2: #3aa17e; --c3: #c94f7c; --c4: #8e6bd6; --c5: #b8962e; --c6: #2f9fbf; --c7: #7a7f88; }
+@media (prefers-color-scheme: dark) { :root { --c0: #7ea2f0; --c1: #f0a066; --c2: #5cc39d; --c3: #e47aa2; --c4: #ae92ee; --c5: #d8b752; --c6: #5cc2df; --c7: #a3a8b0; } }
+.c0 { --c: var(--c0); } .c1 { --c: var(--c1); } .c2 { --c: var(--c2); } .c3 { --c: var(--c3); }
+.c4 { --c: var(--c4); } .c5 { --c: var(--c5); } .c6 { --c: var(--c6); } .c7 { --c: var(--c7); }
+
+.controls.stacked { flex-direction: column; align-items: flex-start; }
+.controls label.block { flex-direction: column; align-items: flex-start; }
+textarea.procs { font-family: var(--mono); background: var(--panel); color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 0.4rem 0.6rem; width: min(22rem, 85vw); }
+input.short { width: 6rem; font-family: var(--mono); }
+.inline-options { display: inline-flex; flex-wrap: wrap; gap: 0.8rem; }
+[hidden] { display: none !important; }
+
+.gantt-scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); padding: 0.3rem 0; }
+table.gantt th, table.gantt td { padding: 0; height: 1.9rem; min-width: 1.6rem; text-align: center; }
+table.gantt thead th { font-size: 0.7rem; color: var(--muted); font-weight: 500; }
+table.gantt thead th.now { color: var(--accent); font-weight: 700; }
+table.gantt th[scope="row"] { text-align: left; padding: 0 0.7rem; color: var(--muted); font-weight: 500; position: sticky; left: 0; background: var(--panel); z-index: 1; white-space: nowrap; }
+table.gantt td { border-left: 1px solid var(--line); }
+table.gantt td.run { background: var(--c); }
+table.gantt td.wait { background: repeating-linear-gradient(45deg, transparent 0 4px, var(--line) 4px 6px); }
+table.gantt td.arrive { box-shadow: inset 2px 0 var(--muted); }
+table.gantt td.now { outline: 2px solid var(--accent); outline-offset: -2px; }
+table.gantt td.future { background: none; }
+
+.queues { display: flex; flex-direction: column; gap: 0.35rem; margin-top: 0.8rem; }
+.queue { display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem; }
+.queue-label { color: var(--muted); font-size: 0.85rem; min-width: 10rem; }
+.chip { display: inline-flex; align-items: baseline; gap: 0.1rem; padding: 0.1rem 0.55rem; border-radius: 999px; border: 2px solid var(--c); font-weight: 600; font-size: 0.9rem; }
+.chip small { font-weight: 400; color: var(--muted); }
+.empty { color: var(--muted); font-style: italic; font-size: 0.9rem; }
+.swatch { display: inline-block; width: 0.7rem; height: 0.7rem; border-radius: 2px; background: var(--c); margin-right: 0.4rem; }
+.compare-table td.best { color: var(--hit-text); font-weight: 700; }
+.compare-table tr.total td, .compare-table tr.total th { border-top: 2px solid var(--line); font-weight: 700; }

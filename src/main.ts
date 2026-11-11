@@ -1,10 +1,11 @@
 // The site: a list of topics and a hash router (#/paging). Each topic builds its own page.
 
 import { paging } from "./topics/paging.ts";
+import { scheduling } from "./topics/scheduling.ts";
 import { AREAS, type Topic } from "./topics/topic.ts";
 import { h, prose, replace } from "./ui/dom.ts";
 
-const TOPICS: Topic[] = [paging];
+const TOPICS: Topic[] = [paging, scheduling];
 
 const nav = document.getElementById("nav")!;
 const main = document.getElementById("main")!;
