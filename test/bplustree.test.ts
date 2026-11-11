@@ -53,7 +53,7 @@ test("an inner split moves the middle key up instead of copying it", () => {
 });
 
 test("invariants hold after every single step, for many orders and insertion orders", () => {
-  for (const order of [3, 4, 5, 6, 7]) {
+  for (const order of [3, 4, 5, 6, 7, 8]) {
     for (const keys of [ascending(60), descending(60), shuffled(80, order), shuffled(120, order * 7)]) {
       const { tree, steps } = build(order, keys);
       for (const s of steps) check(s.tree, order, true);

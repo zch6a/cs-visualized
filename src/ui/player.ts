@@ -56,8 +56,13 @@ export function createPlayer(render: (index: number) => void, options: { label?:
     if (index === count - 1) go(0);
     timer = setInterval(() => go(index + 1), 1000 / speed);
     play.textContent = "❚❚";
-    // While playing, stop announcing every step to screen readers (at 8× it never stops talking).
+    // While playing, stop announcing every step to screen readers (at 8× it never stops talking): the
+    // position, and the page's own live notes, which describe each step.
     position.setAttribute("aria-live", "off");
+    for (const el of document.querySelectorAll("[aria-live=polite]")) {
+      el.setAttribute("aria-live", "off");
+      el.setAttribute("data-quiet", "");
+    }
   }
 
   function stop(): void {
@@ -65,6 +70,10 @@ export function createPlayer(render: (index: number) => void, options: { label?:
     timer = undefined;
     play.textContent = "▶";
     position.setAttribute("aria-live", "polite");
+    for (const el of document.querySelectorAll("[data-quiet]")) {
+      el.setAttribute("aria-live", "polite");
+      el.removeAttribute("data-quiet");
+    }
   }
 
   const self = {};

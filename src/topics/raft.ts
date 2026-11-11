@@ -55,14 +55,14 @@ export const raft: Topic = {
         h("li", {}, prose("*One vote per term*, and a server votes only for a candidate whose log is at least as up to date as its own — so whoever wins already holds every committed entry.")),
         h("li", {}, prose("*Randomized election timeouts*: servers rarely time out together, so one candidate usually wins quickly instead of everyone splitting the vote. (Here the timeouts are only 3–6 round trips long, so split votes are more common than in a real cluster, where they are about ten times the round trip.)")),
         h("li", {}, prose("*A higher term always wins*: a leader that sees a newer term steps down at once. That is what ends split brain when the network heals.")),
-        h("li", {}, prose("*A new leader appends a no-op entry* at once. It is of the new term, so committing it commits everything before it — otherwise entries left over from the old leader would wait for the next client request. (The first version of this page left it out; with some seeds, the catch-up scenario then stranded its last entry forever.)")),
-        h("li", {}, prose("*Commit only entries of your own term by counting* (Figure 8 of the paper). The tests here found the failure without it: in one random run of crashes and partitions, a server committed an old-term entry that a later leader overwrote.")),
+        h("li", {}, prose("*A new leader appends a no-op entry* at once. It is of the new term, so committing it commits everything before it — otherwise entries left over from the old leader would wait for the next client request, possibly forever.")),
+        h("li", {}, prose("*Commit only entries of your own term by counting* (Figure 8 of the paper). An old-term entry can sit on a majority and still be overwritten by a later leader whose last entry has a newer term. With the no-op the rule rarely matters, since an older entry always travels with a current-term one; the tests turn the no-op off and stage Figure 8 to show the failure.")),
       ),
       h("h2", {}, "Things to try"),
       h("ul", {},
         h("li", {}, prose("In *The leader crashes*, look for the election that fails: two candidates in the same term split the votes, nobody has a majority, and a later term decides. Randomized timeouts make this rare, not impossible.")),
         h("li", {}, prose("Change the seed: a different server wins the first election. Why must the protocol work whichever one it is?")),
-        h("li", {}, prose("Crash three of five servers (`60 crash A`, `61 crash B`, `62 crash C`) and send a command: it can be appended, never committed. Restart one: it commits.")),
+        h("li", {}, prose("Crash three of five servers (`60 crash FOLLOWER` on three lines, at ticks 60, 61 and 62) and send `70 client z`: it can be appended, never committed. Add `110 restart CRASHED`: it commits.")),
         h("li", {}, prose("In *Split brain*, send a command to each side. Which one ends up in every log, and why can the other never be committed?")),
       ),
     );
@@ -83,6 +83,10 @@ export const raft: Topic = {
         const lines = scriptInput.value.split("\n").map((l) => l.trim()).filter((l) => l && !l.startsWith("#"));
         const tickOf = (l: string) => Number(l.split(/\s+/)[0]);
         const resolved: string[] = [];
+        for (const line of lines) {
+          const at = tickOf(line);
+          if (Number.isInteger(at) && (at < 0 || at >= 200)) throw new RangeError(`"${line}": the run is 200 ticks long — use a tick from 0 to 199`);
+        }
         for (const line of [...lines].sort((x, y) => tickOf(x) - tickOf(y))) {
           if (!TOKENS.test(line)) {
             resolved.push(line);
@@ -94,7 +98,8 @@ export const raft: Topic = {
           const probe = simulate({ servers: n, ticks: at, seed: Number(seedInput.value), events: parseEvents(before.join("\n")) }).at(-1)!;
           const live = probe.servers.filter((x) => x.alive);
           const leader = live.filter((x) => x.role === "leader").sort((x, y) => y.term - x.term)[0]?.id;
-          const follower = live.filter((x) => x.id !== leader).at(-1)?.id;
+          // A real follower if there is one; otherwise (mid-election) any live server that is not the leader.
+          const follower = (live.filter((x) => x.role === "follower").at(-1) ?? live.filter((x) => x.id !== leader).at(-1))?.id;
           // CRASHED: the server that has been down longest (crashes minus restarts, oldest first).
           const down: string[] = [];
           for (const l of before) {

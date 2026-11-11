@@ -52,3 +52,16 @@ export function prose(text: string): HTMLParagraphElement {
   }
   return p;
 }
+
+/** Scroll the nearest horizontally scrolling box around `cell` so the cell is visible — sideways only.
+ *  (scrollIntoView would also scroll the page up or down, away from what the reader is looking at.) */
+export function keepInView(within: Element, cell: Element | null): void {
+  if (!cell) return;
+  let box: Element | null = cell.parentElement;
+  while (box && box !== within.parentElement && !(box.scrollWidth > box.clientWidth && /auto|scroll/.test(getComputedStyle(box).overflowX))) box = box.parentElement;
+  if (!box || box === within.parentElement) return;
+  const b = box.getBoundingClientRect();
+  const c = cell.getBoundingClientRect();
+  if (c.left < b.left) box.scrollLeft -= b.left - c.left + 8;
+  else if (c.right > b.right) box.scrollLeft += c.right - b.right + 8;
+}

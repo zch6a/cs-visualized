@@ -88,3 +88,12 @@ function ringWith(v: number): Ring {
   if (!r) rings.set(v, (r = new Ring(SERVERS, v)));
   return r;
 }
+
+test("the hash is FNV-1a followed by MurmurHash3's fmix32, bit for bit", () => {
+  // FNV-1a("a") is 0xe40c292c (the published test vector); fmix32 of that, with MurmurHash3's
+  // constants, is 0x1a80b1b3. The others pin the exact placement the page draws.
+  assert.equal(fnv1a("a"), 0x1a80b1b3);
+  assert.equal(fnv1a("A#1"), 0x5a1d7f41);
+  assert.equal(fnv1a("A#2"), 0xaf9b1a59);
+  assert.equal(fnv1a("key-42"), 0xc1116135);
+});

@@ -35,7 +35,7 @@ function renderHome(): void {
       h("ol", {},
         h("li", {}, prose("Pick a *preset* — each one is set up to show one thing (an anomaly, a failure, a textbook example).")),
         h("li", {}, prose("Step through it with the player: `←` `→` step; with the player focused, `Home` `End` jump and `space` plays — or use the buttons and the slider. Every step says what happened and why.")),
-        h("li", {}, prose("Change the input and watch the outcome move. The table at the bottom of each page compares every policy or level on the same input.")),
+        h("li", {}, prose("Change the input and watch the outcome move. The table at the bottom of most pages compares every policy or level on the same input.")),
         h("li", {}, prose("*Things to try* at the end are questions with answers you can find on the page.")))),
     ...AREAS.filter((area) => TOPICS.some((t) => t.area === area)).map((area) =>
       h("section", { class: "cards" }, h("h2", {}, area), ...TOPICS.filter((t) => t.area === area).map((t) =>

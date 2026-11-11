@@ -1,5 +1,5 @@
 import { ALGORITHMS, parseProcesses, schedule, type Algorithm, type Options, type Process, type Result } from "../sim/scheduling.ts";
-import { h, prose, replace } from "../ui/dom.ts";
+import { h, keepInView, prose, replace } from "../ui/dom.ts";
 import { createPlayer } from "../ui/player.ts";
 import type { Topic } from "./topic.ts";
 
@@ -75,7 +75,7 @@ export const scheduling: Topic = {
         h("li", {}, prose("Load *The convoy* and compare FCFS with SJF: the same three jobs, average waiting 17 vs 3, only because of the order.")),
         h("li", {}, prose("In round robin, set the quantum to 1, then to 10 or more (longer than every job's CPU time). Watch average *response* and *turnaround* move in opposite directions — and see what a long quantum turns RR into.")),
         h("li", {}, prose("Load *Interactive vs batch* and switch between FCFS, RR and MLFQ: which one gives `ui2` to `ui4` a response time of 0? And why does `ui1` still wait a tick in MLFQ? (Then try SRTF.)")),
-        h("li", {}, prose("Starvation: in MLFQ, give a long job and a stream of one-tick jobs (`long 0 6`, then `s1 2 2`, `s2 4 2`, … every two ticks). With boost 0 the long job waits until the stream ends; set boost to 8 and it gets the CPU regularly.")),
+        h("li", {}, prose("Starvation: in MLFQ, give a long job and a stream of two-tick jobs (`long 0 6`, then `s1 2 2`, `s2 4 2`, … up to `s9 18 2` — the page takes ten processes). With boost 0 the long job waits from tick 2 until the stream ends at tick 20. With boost 8 it gets two ticks in every ten: a trickle, but no longer starved. Boost 4 gives it more — at what cost to the short jobs?")),
         h("li", {}, prose("SRTF has the lowest average waiting time in the table, always. Why does no real kernel use it? (What would it need to know?)")),
       ),
     );
@@ -152,7 +152,7 @@ export const scheduling: Topic = {
         }),
         index === r.ticks.length - 1 ? h("tr", { class: "total" }, h("th", { scope: "row" }, "average"), h("td", {}), h("td", {}), h("td", {}),
           ...[r.average.turnaround, r.average.waiting, r.average.response].map((v) => h("td", {}, fmt(v)))) : null)));
-      gantt.querySelector("th.now")?.scrollIntoView({ block: "nearest", inline: "nearest" });
+      keepInView(gantt, gantt.querySelector("th.now"));
     }
 
     function drawComparison(opts: Options): void {

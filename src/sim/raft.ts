@@ -63,6 +63,10 @@ export interface Config {
   electionTimeout?: [number, number];
   heartbeat?: number;
   events?: Event[];
+  /** Whether a new leader appends a no-op entry of its term (default true). Turning it off is how the
+   *  tests show that the Figure 8 rule is needed: with the no-op, every message that carries older
+   *  entries also carries a current-term entry after them, so the rule never gets to decide anything. */
+  noop?: boolean;
 }
 
 export interface Frame {
@@ -197,10 +201,11 @@ export function simulate(c: Config): Frame[] {
       s.votedFor = null;
     }
     if (s.role !== "follower") {
+      // A fresh timeout: a former leader's deadline is long past and would start an election at once.
       s.role = "follower";
       s.votes = [];
+      s.electionDeadline = timeout(t);
     }
-    s.electionDeadline = Math.max(s.electionDeadline, t + 1);
   }
 
   function becomeLeader(s: Server, t: number, notes: string[]): void {
@@ -212,9 +217,11 @@ export function simulate(c: Config): Frame[] {
     // A new leader appends a blank entry of its own term at once (§8 of the paper). Entries from earlier
     // terms can only be committed together with one of the current term (Figure 8), so without it they
     // could wait forever for the next client request.
-    s.log.push({ term: s.term, command: NOOP });
+    if (c.noop ?? true) {
+      s.log.push({ term: s.term, command: NOOP });
+      notes.push(`${s.id} has votes from a majority (${s.votes.join(", ")}): it is the leader for term ${s.term}, and appends a no-op entry to commit everything before it`);
+    } else notes.push(`${s.id} has votes from a majority (${s.votes.join(", ")}): it is the leader for term ${s.term}`);
     s.matchIndex[s.id] = s.log.length;
-    notes.push(`${s.id} has votes from a majority (${s.votes.join(", ")}): it is the leader for term ${s.term}, and appends a no-op entry to commit everything before it`);
     advanceCommit(s, notes);
     for (const peer of ids) if (peer !== s.id) sendAppend(s, peer, t);
     lastHeartbeat[s.id] = t;
@@ -269,6 +276,7 @@ export function simulate(c: Config): Frame[] {
         s.electionDeadline = timeout(t);
         const ok = msg.prevIndex === 0 || (msg.prevIndex <= s.log.length && s.log[msg.prevIndex - 1]!.term === msg.prevTerm);
         if (!ok) {
+          notes.push(`${s.id} refuses ${m.from}'s entries: it has no entry at index ${msg.prevIndex} with term ${msg.prevTerm} to attach them to`);
           send(s.id, m.from, { type: "AppendReply", term: s.term, success: false, matchIndex: 0 }, t);
           return;
         }
@@ -292,6 +300,7 @@ export function simulate(c: Config): Frame[] {
         if (s.role !== "leader" || msg.term !== s.term) return;
         if (!msg.success) {
           s.nextIndex[m.from] = Math.max(1, (s.nextIndex[m.from] ?? 1) - 1); // back up and try again
+          notes.push(`${s.id} backs up: it will send ${m.from} entries from index ${s.nextIndex[m.from]} on`);
           sendAppend(s, m.from, t);
           return;
         }

@@ -6,9 +6,9 @@
 // key up to its parent — which may split in turn. When the root splits, the tree grows a level: B+ trees
 // grow at the top, which is why every leaf is always at the same depth.
 //
-// Conventions (textbooks differ): a node with too many keys splits so that the left half gets the larger
-// half (⌈n/2⌉ keys). A leaf split *copies* the right half's first key up (it stays in the leaf); an inner
-// split *moves* its middle key up.
+// Conventions (textbooks differ): an overfull leaf of n keys splits so that the left half gets the larger
+// half (⌈n/2⌉ keys) and *copies* the right half's first key up (it stays in the leaf). An overfull inner
+// node *moves* its middle key up: the left keeps ⌊n/2⌋ keys, the right the rest minus the one moved.
 
 export interface NodeSnapshot {
   id: number;

@@ -150,7 +150,7 @@ export function replay(initial: readonly string[], changes: readonly Change[], v
     const ideal = change.kind === "add" ? 1 / nodes.length : 1 / before.length;
     steps.push({
       nodes: [...nodes], points: [...ring.allPoints], owners: next, moved, movedModulo, change,
-      note: `${change.kind === "add" ? `Add ${change.node}` : `Remove ${change.node}`}: ${moved.length} of ${keys.length} keys move (${pct(moved.length / keys.length)}; the minimum possible is ${pct(ideal)}) — ${change.kind === "add" ? `only keys that ${change.node} now owns, each from the server just after it` : `only the keys ${change.node} owned, each to the next server clockwise`}. With hash mod N, ${movedModulo} (${pct(movedModulo / keys.length)}) would have moved.`,
+      note: `${change.kind === "add" ? `Add ${change.node}` : `Remove ${change.node}`}: ${moved.length} of ${keys.length} keys move (${pct(moved.length / keys.length)}; an even share would be ${pct(ideal)}) — ${change.kind === "add" ? `only keys that ${change.node} now owns, each from the server just after it` : `only the keys ${change.node} owned, each to the next server clockwise`}. With hash mod N, ${movedModulo} (${pct(movedModulo / keys.length)}) would have moved.`,
     });
     owners = next;
   }

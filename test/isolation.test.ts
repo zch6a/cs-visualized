@@ -135,3 +135,18 @@ test("schedules are limited to a number of transactions the serializability chec
   const seven = Array.from({ length: 7 }, (_, i) => `T${i + 1} read x`).join("\n");
   assert.throws(() => parseSchedule(seven), /at most 6 transactions/);
 });
+test("a transaction reads its own uncommitted write, at every level", () => {
+  for (const level of LEVELS) {
+    const o = run(parseSchedule("init x=1\nT1 write x = 5\nT1 read x\nT1 commit"), level);
+    assert.deepEqual(reads(o, "T1"), [5], level);
+    assert.match(o.steps[1]!.note, /its own write/, level);
+  }
+});
+
+test("matching every read is not enough: a serial order must also give the final state", () => {
+  // T2 blindly writes 5 between T1's read and T1's write. Order T1, T2 reproduces T1's read (0) but ends
+  // with x = 5, not 1; order T2, T1 ends with 1 but T1 would have read 5. Neither is the outcome.
+  const o = run(parseSchedule("init x=0\nT1 read x\nT2 write x = 5\nT2 commit\nT1 write x = x + 1\nT1 commit"), "Read Committed");
+  assert.equal(o.final.x, 1);
+  assert.equal(o.serialOrder, null);
+});

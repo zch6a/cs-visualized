@@ -5,6 +5,7 @@ import type { Topic } from "./topic.ts";
 
 const NAMES = ["A", "B", "C", "D", "E", "F", "G", "H"];
 const KEYS = keyNames(2000);
+const extraColors = new Map<string, number>();
 const SHOWN = 240; // keys drawn on the ring
 const SIZE = 420;
 const C = SIZE / 2;
@@ -44,7 +45,7 @@ export const hashing: Topic = {
       h("div", { class: "split ring-split" }, ring, loads),
       note,
       h("h2", {}, "Why many points per server"),
-      prose("With one point each, the arcs between servers are as uneven as random gaps usually are, and so is the load: one server can own twice its share. Give every server many points (*virtual nodes*) and each owns many small arcs, whose total is close to fair. Below: the busiest server's load relative to the average, for 2,000 keys. With so few keys, chance alone moves this by about 0.05–0.15 — compare the `hash mod N` column, which is perfectly uniform in principle — so read the trend, not every digit."),
+      prose("With one point each, the arcs between servers are as uneven as random gaps usually are, and so is the load: one server can own twice its share. Give every server many points (*virtual nodes*) and each owns many small arcs, whose total is close to fair. Below: the busiest server's load relative to the average, for 2,000 keys. With so few keys, chance alone moves this by about 0.05–0.15 — compare the `hash mod N` column, which is perfectly uniform in principle — so read the trend, not every digit. (Some counts buck the trend — with five servers, 100 points leave the busiest at about 1.27×, worse than 50, and 200,000 keys give the same. That is not noise but where these particular points happen to fall: more points make a lopsided ring unlikely, not impossible.)"),
       balance,
       h("h2", {}, "Things to try"),
       h("ul", {},
@@ -74,7 +75,11 @@ export const hashing: Topic = {
     }
 
     function colorOf(node: string): string {
-      return `c${NAMES.indexOf(node) % 8}`;
+      // A–H have fixed colours; other names (allowed in the changes) take the next ones in order of use.
+      const known = NAMES.indexOf(node);
+      if (known >= 0) return `c${known}`;
+      if (!extraColors.has(node)) extraColors.set(node, (servers.length + extraColors.size) % 8);
+      return `c${extraColors.get(node)}`;
     }
 
     function draw(index: number): void {

@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 400" width="1280" height="400" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', Helvetica, Arial, sans-serif" role="img" aria-label="CS, visualized — Computer science you can step through">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1a1b2e"/><stop offset="1" stop-color="#123d3f"/></linearGradient>
+    <radialGradient id="glow" cx="0.16" cy="0.45" r="0.35"><stop offset="0" stop-color="#4fd1c5" stop-opacity=".28"/><stop offset="1" stop-color="#4fd1c5" stop-opacity="0"/></radialGradient>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M40 0H0V40" fill="none" stroke="#ffffff" stroke-opacity=".045"/></pattern>
+  </defs>
+  <rect width="1280" height="400" rx="24" fill="url(#bg)"/>
+  <rect width="1280" height="400" rx="24" fill="url(#grid)"/>
+  <rect width="1280" height="400" rx="24" fill="url(#glow)"/>
+  <g transform="translate(180,190)"><circle cx="0" cy="-14" r="46" fill="none" stroke="#4fd1c5" stroke-width="7"/><path d="M-14 -38 L24 -14 L-14 10 Z" fill="#4fd1c5"/><rect x="-66" y="58" width="22" height="22" rx="4" fill="#4fd1c5"/><rect x="-36" y="58" width="22" height="22" rx="4" fill="#4fd1c5"/><rect x="-6" y="58" width="22" height="22" rx="4" fill="#4fd1c5" stroke="#fff" stroke-width="2.5"/><rect x="24" y="58" width="22" height="22" rx="4" fill="#4fd1c5" opacity=".45"/><rect x="54" y="58" width="22" height="22" rx="4" fill="#4fd1c5" opacity=".45"/></g>
+  <text x="330" y="138" font-size="64" font-weight="800" fill="#ffffff" letter-spacing="-1">CS, visualized</text>
+  <text x="330" y="196" font-size="30" font-weight="600" fill="#4fd1c5">Computer science you can step through</text>
+  <text x="330" y="244" font-size="20" fill="#c4c9d6">Page replacement, scheduling, TCP, B+ trees, transactions, consistent hashing and Raft —</text>
+  <text x="330" y="272" font-size="20" fill="#c4c9d6">tested simulations, step by step.</text>
+  <g transform="translate(330,318)"><rect width="105" height="36" rx="18" fill="#4fd1c5" fill-opacity=".14" stroke="#4fd1c5" stroke-opacity=".55"/><text x="52" y="24" text-anchor="middle" font-size="16" fill="#e8ebf2">8 topics</text></g>
+  <g transform="translate(447,318)"><rect width="230" height="36" rx="18" fill="#4fd1c5" fill-opacity=".14" stroke="#4fd1c5" stroke-opacity=".55"/><text x="115" y="24" text-anchor="middle" font-size="16" fill="#e8ebf2">Step forward and back</text></g>
+  <g transform="translate(688,318)"><rect width="258" height="36" rx="18" fill="#4fd1c5" fill-opacity=".14" stroke="#4fd1c5" stroke-opacity=".55"/><text x="129" y="24" text-anchor="middle" font-size="16" fill="#e8ebf2">Tested against textbooks</text></g>
+  <g transform="translate(959,318)"><rect width="172" height="36" rx="18" fill="#4fd1c5" fill-opacity=".14" stroke="#4fd1c5" stroke-opacity=".55"/><text x="86" y="24" text-anchor="middle" font-size="16" fill="#e8ebf2">No dependencies</text></g>
+</svg>

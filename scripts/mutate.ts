@@ -7,6 +7,11 @@
 // whole suite still passes — means a rule that matters is untested. The repository is never modified:
 // src/sim and test are copied into a temporary folder and the suite runs there. A mutant that makes the
 // tests hang counts as caught after a timeout.
+//
+// Left out because they cannot change behaviour here (equivalent mutants): a follower committing up to
+// leaderCommit without capping it at what it just matched (every AppendEntries carries the leader's whole
+// suffix, so the match is never below leaderCommit), and `<=` for `<` in the ring's binary search (two
+// points at the same 32-bit position never occur in practice).
 import { spawnSync } from "node:child_process";
 import { cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -53,7 +58,6 @@ const MUTANTS: [file: string, original: string, mutant: string][] = [
   ["isolation.ts", "if (op.key in tx.writes) {", "if (false) {"],
   ["isolation.ts", "if (ok && Object.keys(final).every((k) => (db[k] ?? 0) === final[k])) return order;", "if (ok) return order;"],
   // hashing
-  ["hashing.ts", "if (this.points[mid]!.position < position) lo = mid + 1;", "if (this.points[mid]!.position <= position) lo = mid + 1;"],
   ["hashing.ts", "return this.points[lo % this.points.length]!;", "return this.points[Math.min(lo, this.points.length - 1)]!;"],
   ["hashing.ts", "  h ^= h >>> 16;\n  h = Math.imul(h, 0x85ebca6b) >>> 0;", "  h = Math.imul(h, 0x85ebca6b) >>> 0;"],
   ["hashing.ts", "return nodes[fnv1a(key) % nodes.length]!;", "return nodes[fnv1a(key) % 5]!;"],
@@ -62,7 +66,6 @@ const MUTANTS: [file: string, original: string, mutant: string][] = [
   ["raft.ts", "const grant = msg.term === s.term && (s.votedFor === null || s.votedFor === m.from) && upToDate;", "const grant = msg.term === s.term && upToDate;"],
   ["raft.ts", "if (replicas >= majority && s.log[n - 1]!.term === s.term) {", "if (replicas >= majority) {"],
   ["raft.ts", "if (existing && existing.term !== e.term) {", "if (false) {"],
-  ["raft.ts", "const newCommit = Math.min(msg.leaderCommit, match);", "const newCommit = msg.leaderCommit;"],
   ["raft.ts", "if (msg.term < s.term) {\n          send(s.id, m.from, { type: \"AppendReply\"", "if (false) {\n          send(s.id, m.from, { type: \"AppendReply\""],
   ["raft.ts", "s.nextIndex[m.from] = Math.max(1, (s.nextIndex[m.from] ?? 1) - 1); // back up and try again", "s.nextIndex[m.from] = Math.max(1, s.nextIndex[m.from] ?? 1);"],
   ["raft.ts", "    s.log.push({ term: s.term, command: NOOP });", "    // (mutant: no no-op)"],
@@ -75,6 +78,13 @@ try {
   cpSync(join(root, "src"), join(tmp, "src"), { recursive: true });
   cpSync(join(root, "test"), join(tmp, "test"), { recursive: true });
   writeFileSync(join(tmp, "package.json"), JSON.stringify({ type: "module" }));
+  // The unmutated suite must pass first. (A first version passed "test/" to node --test, which Node 24
+  // treats as a module name: every run failed, so every mutant counted as "caught".)
+  const baseline = runSuite();
+  if (baseline.status !== 0) {
+    console.error("The test suite fails without any mutant — fix that first:\n" + baseline.stdout.slice(-2000));
+    process.exit(2);
+  }
   MUTANTS.forEach(([file, original, mutant], i) => {
     const path = join(tmp, "src", "sim", file);
     const source = readFileSync(path, "utf8");
@@ -85,7 +95,7 @@ try {
       return;
     }
     writeFileSync(path, source.replace(original, mutant));
-    const r = spawnSync(process.execPath, ["--test", "--test-reporter=dot", "test/"], { cwd: tmp, encoding: "utf8", timeout: 120_000 });
+    const r = runSuite();
     writeFileSync(path, source);
     const ok = r.status !== 0 || r.signal !== null;
     console.log(`${ok ? "caught  " : "SURVIVED"} ${label}`);
@@ -96,4 +106,8 @@ try {
   rmSync(tmp, { recursive: true, force: true });
 }
 console.log(`\n${caught} of ${MUTANTS.length} mutants caught`);
+
+function runSuite() {
+  return spawnSync(process.execPath, ["--test", "--test-reporter=dot", "test/**/*.test.ts"], { cwd: tmp, encoding: "utf8", timeout: 120_000 });
+}
 process.exit(survived.length ? 1 : 0);

@@ -94,7 +94,11 @@ export const bplustree: Topic = {
 
     function doSearch(): void {
       const key = Number(searchInput.value);
-      if (!Number.isInteger(key)) return;
+      if (searchInput.value.trim() === "" || !Number.isInteger(key)) {
+        error.textContent = "Search for a whole number.";
+        return;
+      }
+      error.textContent = "";
       const r = tree.search(key);
       steps = r.steps;
       mode = "search";

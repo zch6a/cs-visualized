@@ -117,9 +117,44 @@ test("safety holds under random crashes, restarts and partitions", () => {
 });
 
 test("the Figure 8 rule: only entries of the leader's own term are committed by counting replicas", () => {
-  // Found by searching 3,000 random fault schedules with that rule removed: schedule 2427 makes a server
-  // commit an old-term entry that a later leader then overwrites. With the rule, it is safe.
-  const frames = simulate({ servers: 5, ticks: 300, seed: 2427, events: randomEvents(2427) });
+  // Figure 8 of the paper, staged with the no-op turned off. (With the no-op, every message carrying an
+  // older entry also carries a current-term entry, so the rule never decides anything; and random
+  // fault schedules almost never hit this timing — 0 of 3,000 do.) Each event is placed after the run
+  // so far has reached the state the next one needs; later events never change earlier frames.
+  const events: Event[] = [];
+  const run = (ticks = 400) => simulate({ servers: 5, ticks, seed: 8, events, noop: false });
+  const first = (from: number, ok: (f: Frame) => boolean) => {
+    const at = run().findIndex((f) => f.time > from && ok(f));
+    assert.ok(at >= 0, `the run never reached the next stage after tick ${from}: ${JSON.stringify(events)}`);
+    return run()[at]!;
+  };
+  const server = (f: Frame, id: string) => f.servers.find((s) => s.id === id)!;
+
+  // (a) Leader L1, cut off with one follower P, takes "x" at index 1 — two copies, not a majority.
+  let f = first(-1, (fr) => leaders(fr).length > 0);
+  const l1 = leaders(f)[0]!.id;
+  const [p, ...rest] = ["A", "B", "C", "D", "E"].filter((x) => x !== l1);
+  events.push({ at: f.time + 1, kind: "partition", groups: [[l1, p!], rest] }, { at: f.time + 2, kind: "client", command: "x", to: l1 });
+  // (b) The other three elect L2, which takes "y" at index 1 alone in a later term, then crashes.
+  f = first(f.time + 2, (fr) => leaders(fr).some((s) => rest.includes(s.id)) && server(fr, p!).log.length === 1);
+  const l2 = leaders(f).find((s) => rest.includes(s.id))!.id;
+  const [q, r] = rest.filter((x) => x !== l2);
+  events.push(
+    { at: f.time + 1, kind: "partition", groups: [[l1, p!], [l2], [q!, r!]] },
+    { at: f.time + 2, kind: "client", command: "y", to: l2 },
+    { at: f.time + 3, kind: "crash", server: l2 },
+    { at: f.time + 4, kind: "heal" },
+  );
+  // (c) L1 or P wins a still later term and copies "x" to Q and R: now on a majority, but from an old term.
+  f = first(f.time + 4, (fr) => leaders(fr).some((s) => s.id === l1 || s.id === p) && [q!, r!].every((id) => server(fr, id).log[0]?.command === "x"));
+  const l3 = leaders(f)[0]!;
+  assert.equal(l3.log[0]!.term < l3.term, true, '"x" is from an older term than the leader that spread it');
+  // (d) L2 comes back on the side of Q and R; its "y" has a newer term than "x", so they elect it.
+  events.push({ at: f.time + 1, kind: "partition", groups: [[l1, p!], [l2, q!, r!]] }, { at: f.time + 1, kind: "restart", server: l2 });
+  const frames = run();
+  const end = frames.at(-1)!;
+  assert.deepEqual([q!, r!].map((id) => server(end, id).log[0]!.command), ["y", "y"], "L2 overwrote x on Q and R — legal only because x was never committed");
+  assert.ok(frames.every((fr) => fr.servers.every((s) => s.commitIndex === 0)), "nothing could be committed: no leader ever had an entry of its own term on a majority");
   checkSafety(frames);
 });
 

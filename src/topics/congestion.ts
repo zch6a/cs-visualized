@@ -38,10 +38,17 @@ export const congestion: Topic = {
     const startB = h("input", { type: "number", min: 0, max: 100, value: 2, "aria-label": "Flow B starts at" });
     const fairChart = h("div", { class: "chart square" });
     const fairNote = h("p", { class: "note", "aria-live": "polite" });
+    const fairError = h("p", { class: "error", role: "alert" });
     let fairSteps = fairness(34, 2, 48, 80);
     const fairPlayer = createPlayer(drawFair, { label: "Step through the two flows" });
     for (const el of [startA, startB]) el.addEventListener("change", () => {
-      fairSteps = fairness(clamp(Number(startA.value), 0, 100), clamp(Number(startB.value), 0, 100), 48, 80);
+      try {
+        fairSteps = fairness(whole(startA, "Flow A", 0, 100), whole(startB, "Flow B", 0, 100), 48, 80);
+        fairError.textContent = "";
+      } catch (e) {
+        fairError.textContent = (e as Error).message;
+        return;
+      }
       fairPlayer.load(fairSteps.length, fairPlayer.index);
     });
 
@@ -69,6 +76,7 @@ export const congestion: Topic = {
       h("h2", {}, "Two flows, one link: why AIMD is fair"),
       prose("Two senders share a link that carries 48 segments per round trip. Each runs AIMD: +1 per round trip, ×½ when the link overflows (both see the loss). Plot one window against the other. Additive increase moves the point diagonally — the *gap* between them stays the same. Multiplicative decrease moves it towards the origin — the gap halves. So, whatever the start, they end up sharing equally (Chiu and Jain, 1989). Try starting them far apart."),
       h("div", { class: "controls" }, h("label", {}, "Flow A starts at ", startA), h("label", {}, "Flow B starts at ", startB)),
+      fairError,
       fairPlayer.element,
       fairChart,
       fairNote,
@@ -88,12 +96,12 @@ export const congestion: Topic = {
     };
 
     function scenario(v: Variant): Scenario {
-      const capacity = clamp(Number(capacityInput.value), 4, 200);
-      const timeout = clamp(Number(timeoutInput.value), 0, 120);
+      const capacity = whole(capacityInput, "Link capacity", 4, 200);
+      const timeout = whole(timeoutInput, "Timeout at round", 0, 120);
       return {
         variant: v,
-        rounds: clamp(Number(roundsInput.value), 10, 120),
-        ssthresh: clamp(Number(ssthreshInput.value), 2, 200),
+        rounds: whole(roundsInput, "Round trips", 10, 120),
+        ssthresh: whole(ssthreshInput, "Initial ssthresh", 2, 200),
         capacity,
         events: timeout > 0 ? [{ round: timeout, kind: "timeout" as LossKind }] : [],
       };
@@ -144,16 +152,18 @@ export const congestion: Topic = {
       const C = 48;
       const size = 360;
       const pad = 40;
-      const scale = (v: number) => pad + (v / 60) * (size - 2 * pad);
+      // Room for the starting points (up to 100) as well as the capacity line.
+      const top = Math.max(60, Math.ceil(Math.max(...fairSteps.map((p) => Math.max(p.a, p.b))) / 10) * 10 + 10);
+      const scale = (v: number) => pad + (v / top) * (size - 2 * pad);
       const sy = (v: number) => size - scale(v);
       const shown = fairSteps.slice(0, index + 1);
       const svg = s("svg", { viewBox: `0 0 ${size} ${size}`, role: "img", "aria-label": "Window of flow A against flow B" },
-        s("line", { x1: scale(0), y1: sy(0), x2: scale(60), y2: sy(0), class: "axis" }),
-        s("line", { x1: scale(0), y1: sy(0), x2: scale(0), y2: sy(60), class: "axis" }),
-        s("text", { x: scale(60), y: sy(0) + 26, class: "label end" }, "flow A window →"),
-        s("text", { x: scale(0) - 8, y: sy(60) - 6, class: "label" }, "flow B ↑"),
-        s("line", { x1: scale(0), y1: sy(0), x2: scale(60), y2: sy(60), class: "fair" }),
-        s("text", { x: scale(52), y: sy(56), class: "label end" }, "fair: A = B"),
+        s("line", { x1: scale(0), y1: sy(0), x2: scale(top), y2: sy(0), class: "axis" }),
+        s("line", { x1: scale(0), y1: sy(0), x2: scale(0), y2: sy(top), class: "axis" }),
+        s("text", { x: scale(top), y: sy(0) + 26, class: "label end" }, "flow A window →"),
+        s("text", { x: scale(0) - 8, y: sy(top) - 6, class: "label" }, "flow B ↑"),
+        s("line", { x1: scale(0), y1: sy(0), x2: scale(top), y2: sy(top), class: "fair" }),
+        s("text", { x: scale(top * 0.87), y: sy(top * 0.93), class: "label end" }, "fair: A = B"),
         s("line", { x1: scale(C), y1: sy(0), x2: scale(0), y2: sy(C), class: "capacity" }),
         s("text", { x: scale(C) + 4, y: sy(2), class: "label" }, `A + B = ${C}`),
         s("polyline", { points: shown.map((p) => `${scale(p.a).toFixed(1)},${sy(p.b).toFixed(1)}`).join(" "), class: "trajectory" }),
@@ -186,8 +196,11 @@ function niceStep(raw: number): number {
   return [1, 2, 5, 10].map((m) => m * p).find((v) => v >= raw) ?? 10 * p;
 }
 
-function clamp(v: number, lo: number, hi: number): number {
-  return Number.isFinite(v) ? Math.min(hi, Math.max(lo, Math.round(v))) : lo;
+/** The input's value, or a clear error instead of silently correcting it (as the other pages do). */
+function whole(input: HTMLInputElement, label: string, lo: number, hi: number): number {
+  const v = Number(input.value);
+  if (input.value.trim() === "" || !Number.isInteger(v) || v < lo || v > hi) throw new RangeError(`${label}: a whole number from ${lo} to ${hi}.`);
+  return v;
 }
 
 function fmt(v: number): string {

@@ -1,5 +1,5 @@
 import { BELADY, countFaults, parseReferenceString, POLICIES, simulate, type PagingStep, type Policy } from "../sim/paging.ts";
-import { h, prose, replace } from "../ui/dom.ts";
+import { h, keepInView, prose, replace } from "../ui/dom.ts";
 import { createPlayer } from "../ui/player.ts";
 import type { Topic } from "./topic.ts";
 
@@ -122,7 +122,7 @@ export const paging: Topic = {
       note.textContent = current.note;
       const hits = index + 1 - current.faults;
       replace(stats, `${current.faults} faults, ${hits} hits so far — ${Math.round((100 * current.faults) / (index + 1))}% fault rate.`);
-      grid.querySelector("th.now")?.scrollIntoView({ block: "nearest", inline: "nearest" });
+      keepInView(grid, grid.querySelector("th.now"));
     }
 
     function cellClass(i: number, index: number): string {
