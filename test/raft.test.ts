@@ -1,7 +1,10 @@
 import { strict as assert } from "node:assert";
 import { test } from "node:test";
 
-import { parseEvents, simulate, type Event, type Frame } from "../src/sim/raft.ts";
+import { NOOP, parseEvents, simulate, type Event, type Frame, type Server } from "../src/sim/raft.ts";
+
+/** Client commands in a log, without the no-op entries each new leader appends. */
+const commands = (s: Server) => s.log.map((e) => e.command).filter((c) => c !== NOOP);
 
 const leaders = (f: Frame) => f.servers.filter((s) => s.alive && s.role === "leader");
 
@@ -55,8 +58,8 @@ test("client commands are replicated to every server and committed", () => {
   const frames = simulate({ servers: 5, ticks: 100, seed: 2, events });
   const last = frames.at(-1)!;
   for (const s of last.servers) {
-    assert.deepEqual(s.log.map((e) => e.command), ["x=1", "y=2", "x=3"], s.id);
-    assert.equal(s.commitIndex, 3, `${s.id} has learned the commit index`);
+    assert.deepEqual(commands(s), ["x=1", "y=2", "x=3"], s.id);
+    assert.equal(s.commitIndex, s.log.length, `${s.id} has learned the commit index`);
   }
   checkSafety(frames);
 });
@@ -70,7 +73,7 @@ test("when the leader crashes, the others elect a new one in a higher term and k
   assert.equal(after.length, 1);
   assert.notEqual(after[0]!.id, leader.id);
   assert.ok(after[0]!.term > leader.term);
-  assert.deepEqual(after[0]!.log.map((e) => e.command), ["a", "b"], "the committed entry survives the leader");
+  assert.deepEqual(commands(after[0]!), ["a", "b"], "the committed entry survives the leader");
   checkSafety(frames);
 });
 
@@ -90,9 +93,9 @@ test("a leader cut off in a minority cannot commit; after healing, its uncommitt
   const during = frames[130]!;
   const stale = during.servers.find((s) => s.id === old)!;
   assert.equal(stale.log.at(-1)?.command, "lost");
-  assert.equal(stale.commitIndex, 0, "two servers out of five are not a majority");
+  assert.ok(stale.commitIndex < stale.log.length, "two servers out of five are not a majority: \"lost\" stays uncommitted");
   const end = frames.at(-1)!;
-  for (const s of end.servers) assert.deepEqual(s.log.map((e) => e.command), ["kept"], `${s.id}: "lost" was never committed and is gone`);
+  for (const s of end.servers) assert.deepEqual(commands(s), ["kept"], `${s.id}: "lost" was never committed and is gone`);
   checkSafety(frames);
 });
 
@@ -100,8 +103,8 @@ test("a restarted server catches up from its peers", () => {
   const events = parseEvents("30 crash E\n40 client p\n45 client q\n80 restart E");
   const frames = simulate({ servers: 5, ticks: 140, seed: 5, events });
   const e = frames.at(-1)!.servers.find((s) => s.id === "E")!;
-  assert.deepEqual(e.log.map((x) => x.command), ["p", "q"]);
-  assert.equal(e.commitIndex, 2);
+  assert.deepEqual(commands(e), ["p", "q"]);
+  assert.equal(e.commitIndex, e.log.length);
   checkSafety(frames);
 });
 
@@ -163,7 +166,7 @@ test("a single server is its own majority; other cluster sizes stay safe", () =>
   const one = simulate({ servers: 1, ticks: 80, seed: 1, events: parseEvents("40 client x=1") });
   const s = one.at(-1)!.servers[0]!;
   assert.equal(s.role, "leader");
-  assert.equal(s.commitIndex, 1, "nobody else to ask: the entry is committed at once");
+  assert.equal(s.commitIndex, s.log.length, "nobody else to ask: the entry is committed at once");
   for (const servers of [2, 3, 4, 6, 7]) {
     for (let seed = 1; seed <= 10; seed++) {
       const ids = ["A", "B", "C", "D", "E", "F", "G"].slice(0, servers);
@@ -176,4 +179,20 @@ test("a single server is its own majority; other cluster sizes stay safe", () =>
 test("events naming a server that does not exist are refused clearly", () => {
   assert.throws(() => simulate({ servers: 3, ticks: 50, seed: 1, events: parseEvents("10 crash D") }), /no server D/);
   assert.throws(() => simulate({ servers: 3, ticks: 50, seed: 1, events: parseEvents("10 partition A | E") }), /no server E/);
+});
+
+test("a new leader commits earlier entries through its no-op, without waiting for a client", () => {
+  // The catch-up scenario sends nothing after the second leader takes over. Without the no-op, entry
+  // r=3 (from the old term) stayed uncommitted forever on some seeds; now it commits on every seed.
+  for (let seed = 1; seed <= 8; seed++) {
+    const first = simulate({ servers: 5, ticks: 40, seed });
+    const leader = first.at(-1)!.servers.find((s) => s.role === "leader")!.id;
+    const follower = ["A", "B", "C", "D", "E"].filter((x) => x !== leader).at(-1)!;
+    const events = parseEvents(`40 client p=1\n50 crash ${follower}\n56 client q=2\n62 client r=3\n70 crash ${leader}\n120 restart ${follower}\n150 restart ${leader}`);
+    const end = simulate({ servers: 5, ticks: 220, seed, events }).at(-1)!;
+    for (const s of end.servers) {
+      assert.deepEqual(commands(s), ["p=1", "q=2", "r=3"], `seed ${seed}, ${s.id}`);
+      assert.equal(s.commitIndex, s.log.length, `seed ${seed}, ${s.id}: everything committed`);
+    }
+  }
 });

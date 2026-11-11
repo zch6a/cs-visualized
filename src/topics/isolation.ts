@@ -4,7 +4,7 @@ import { createPlayer } from "../ui/player.ts";
 import type { Topic } from "./topic.ts";
 
 const EXPLAIN: Record<Level, string> = {
-  "Read Uncommitted": "*Read Uncommitted*: a read returns the newest value, even one another transaction has not committed — and might still roll back.",
+  "Read Uncommitted": "*Read Uncommitted*: a read returns the newest value, even one another transaction has not committed — and might still roll back. (PostgreSQL accepts this level but runs it as Read Committed; SQL Server and MySQL do allow dirty reads.)",
   "Read Committed": "*Read Committed*: a read returns the newest *committed* value at that moment. The default in PostgreSQL, Oracle and SQL Server. Two reads of the same row can disagree.",
   Snapshot: "*Snapshot isolation*: a transaction reads the database as it was when the transaction began, and of two transactions writing the same row, the second to commit is aborted (*first committer wins*). PostgreSQL's REPEATABLE READ (and Oracle's SERIALIZABLE) is this — though PostgreSQL detects the conflict at the second *write*, after waiting for the first transaction, rather than at commit as here.",
   Serializable: "*Serializable*: snapshot reads, plus a check at commit — if anything this transaction read or wrote was changed by a transaction that committed since it began, it is aborted. Every outcome equals running the committed transactions one at a time, in some order. The check is cautious: it also aborts some harmless transactions — like T1 in *Non-repeatable read*, which only read. PostgreSQL's serializable mode is smarter (it aborts only when the conflicts form a dangerous pattern), at the cost of more bookkeeping.",

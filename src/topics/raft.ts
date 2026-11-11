@@ -34,7 +34,7 @@ export const raft: Topic = {
 
     replace(root,
       h("h1", {}, "Raft consensus"),
-      prose("Replicate a log over a few servers and you can lose some of them without losing data — if they agree on what the log says, in what order, even while crashing and while the network drops messages. Raft does it with a leader: servers elect one, the leader orders every client command and copies it to the others, and an entry counts as *committed* once a majority has it. Any majority overlaps any other, so a committed entry can never be lost."),
+      prose("Replicate a log over a few servers and you can lose some of them without losing data — if they agree on what the log says, in what order, even while crashing and while the network drops messages. Raft does it with a leader: servers elect one, the leader orders every client command and copies it to the others, and an entry is *committed* once the leader that created it has copied it to a majority (an entry from an older term counts only together with a newer one — see the rules below). Any majority overlaps any other, so a committed entry can never be lost."),
       h("div", { class: "presets" }, "Scenario: ", ...PRESETS.map((p) => h("button", { type: "button", class: "link", onclick: () => {
         scriptInput.value = p.script;
         about.dataset.preset = p.name;
@@ -49,13 +49,14 @@ export const raft: Topic = {
       player.element,
       h("div", { class: "split raft-split" }, picture, notes),
       h("h2", {}, "The logs"),
-      prose("Each row is one server's log; the colour is the term in which the entry was created. A solid cell is committed on that server, an outlined one is not (yet)."),
+      prose("Each row is one server's log; the colour is the term in which the entry was created. A solid cell is committed on that server, an outlined one is not (yet). `no-op` is the blank entry each new leader starts its term with."),
       logs,
       h("h2", {}, "The rules that make it safe"),
       h("ul", {},
         h("li", {}, prose("*One vote per term*, and a server votes only for a candidate whose log is at least as up to date as its own — so whoever wins already holds every committed entry.")),
-        h("li", {}, prose("*Randomized election timeouts*: servers rarely time out together, so one candidate usually wins quickly instead of everyone splitting the vote.")),
+        h("li", {}, prose("*Randomized election timeouts*: servers rarely time out together, so one candidate usually wins quickly instead of everyone splitting the vote. (Here the timeouts are only 3–6 round trips long, so split votes are more common than in a real cluster, where they are about ten times the round trip.)")),
         h("li", {}, prose("*A higher term always wins*: a leader that sees a newer term steps down at once. That is what ends split brain when the network heals.")),
+        h("li", {}, prose("*A new leader appends a no-op entry* at once. It is of the new term, so committing it commits everything before it — otherwise entries left over from the old leader would wait for the next client request. (The first version of this page left it out; with some seeds, the catch-up scenario then stranded its last entry forever.)")),
         h("li", {}, prose("*Commit only entries of your own term by counting* (Figure 8 of the paper). The tests here found the failure without it: in one random run of crashes and partitions, a server committed an old-term entry that a later leader overwrote.")),
       ),
       h("h2", {}, "Things to try"),

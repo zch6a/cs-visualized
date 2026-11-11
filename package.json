@@ -13,6 +13,7 @@
     "serve": "node scripts/serve.ts",
     "dev": "node scripts/build.ts && node scripts/serve.ts --watch",
     "test": "node --test --test-reporter=spec \"test/**/*.test.ts\"",
+    "mutate": "node scripts/mutate.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "check": "npm run typecheck && npm test"
   },

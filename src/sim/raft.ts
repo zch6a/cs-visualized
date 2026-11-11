@@ -75,6 +75,9 @@ export interface Frame {
 
 const NAMES = ["A", "B", "C", "D", "E", "F", "G"];
 
+/** The command of a leader's first entry in its term. */
+export const NOOP = "no-op";
+
 export function simulate(c: Config): Frame[] {
   if (!Number.isInteger(c.servers) || c.servers < 1 || c.servers > 7) throw new RangeError("servers must be 1 to 7");
   if (!Number.isInteger(c.ticks) || c.ticks < 1 || c.ticks > 2000) throw new RangeError("ticks must be 1 to 2000");
@@ -206,8 +209,13 @@ export function simulate(c: Config): Frame[] {
       s.nextIndex[peer] = s.log.length + 1;
       s.matchIndex[peer] = 0;
     }
+    // A new leader appends a blank entry of its own term at once (§8 of the paper). Entries from earlier
+    // terms can only be committed together with one of the current term (Figure 8), so without it they
+    // could wait forever for the next client request.
+    s.log.push({ term: s.term, command: NOOP });
     s.matchIndex[s.id] = s.log.length;
-    notes.push(`${s.id} has votes from a majority (${s.votes.join(", ")}): it is the leader for term ${s.term}`);
+    notes.push(`${s.id} has votes from a majority (${s.votes.join(", ")}): it is the leader for term ${s.term}, and appends a no-op entry to commit everything before it`);
+    advanceCommit(s, notes);
     for (const peer of ids) if (peer !== s.id) sendAppend(s, peer, t);
     lastHeartbeat[s.id] = t;
   }

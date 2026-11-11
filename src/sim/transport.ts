@@ -212,13 +212,13 @@ export function simulate(c: Config): Run {
         } else {
           send("client", "ACK", t, {});
           finishedAt = t + D;
-          notes.push("client gets the server's FIN and ACKs it: the connection is closed once that ACK lands");
+          notes.push("client gets the server's FIN and ACKs it; the server closes when that ACK lands, while a real client would wait in TIME-WAIT (twice the maximum segment lifetime) in case it is lost");
         }
         return;
       case "ACK":
         if (m.ack === undefined) {
           if (m.from === "server" && phase === "teardown") notes.push("the server's ACK of the client's FIN arrives");
-          if (m.from === "client" && phase === "closed") notes.push("the client's last ACK arrives: both sides are closed");
+          if (m.from === "client" && phase === "closed") notes.push("the client's last ACK arrives: the server is closed (the client's TIME-WAIT is not modelled)");
           return;
         }
         if (m.from === "server") onAck(m.ack, t, notes);
