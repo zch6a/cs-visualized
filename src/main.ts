@@ -5,12 +5,13 @@ import { congestion } from "./topics/congestion.ts";
 import { hashing } from "./topics/hashing.ts";
 import { isolation } from "./topics/isolation.ts";
 import { paging } from "./topics/paging.ts";
+import { raft } from "./topics/raft.ts";
 import { scheduling } from "./topics/scheduling.ts";
 import { transport } from "./topics/transport.ts";
 import { AREAS, type Topic } from "./topics/topic.ts";
 import { h, prose, replace } from "./ui/dom.ts";
 
-const TOPICS: Topic[] = [paging, scheduling, congestion, transport, bplustree, isolation, hashing];
+const TOPICS: Topic[] = [paging, scheduling, congestion, transport, bplustree, isolation, hashing, raft];
 
 const nav = document.getElementById("nav")!;
 const main = document.getElementById("main")!;

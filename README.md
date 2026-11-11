@@ -19,7 +19,7 @@ LRU 12, OPT 9 faults on Silberschatz's reference string) and against the propert
 | Databases | B+ tree: insert with splits, search, range scans along the leaf links | ✅ |
 | Databases | Transaction isolation: dirty reads, lost updates, write skew at four levels, with a serializability check | ✅ |
 | Distributed systems | Consistent hashing: the ring, virtual nodes, keys moved vs hash mod N | ✅ |
-| Distributed systems | Raft: leader election and log replication | planned |
+| Distributed systems | Raft: elections, replication, commitment through crashes and partitions | ✅ |
 
 ## Run it
 

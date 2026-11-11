@@ -267,3 +267,28 @@ details summary { cursor: pointer; color: var(--accent); margin: 0.5rem 0; }
 .bar { display: block; height: 100%; background: var(--c); }
 .bar-value { text-align: right; font-variant-numeric: tabular-nums; color: var(--muted); }
 .mono { font-family: var(--mono); }
+/* raft */
+.raft-split { grid-template-columns: minmax(0, 26rem) minmax(14rem, 1fr); }
+.chart .server circle { fill: var(--panel); stroke: var(--muted); stroke-width: 2; }
+.chart .server.leader circle { stroke: var(--accent); stroke-width: 4; fill: var(--accent-soft); }
+.chart .server.candidate circle { stroke: var(--warn); stroke-width: 3; stroke-dasharray: 5 3; }
+.chart .server.down circle { fill: var(--line); stroke: var(--fault-text); opacity: 0.6; }
+.chart .server-name { font-size: 18px; font-weight: 700; fill: var(--text); text-anchor: middle; }
+.chart .server-term { font-size: 10px; fill: var(--muted); text-anchor: middle; }
+.chart .message .wire { stroke: var(--line); stroke-width: 1; }
+.chart .message circle { fill: var(--panel); stroke: var(--accent); stroke-width: 1.5; }
+.chart .message.RequestVote circle, .chart .message.Vote circle { stroke: var(--warn); }
+.chart .message.AppendReply circle { stroke: var(--hit-text); }
+.chart .message.dropped circle { stroke: var(--fault-text); stroke-dasharray: 2 2; }
+.chart .msg-label { font-size: 8px; text-anchor: middle; fill: var(--text); font-family: var(--sans); }
+.chart .partition-label { fill: var(--fault-text); font-weight: 700; }
+.notes { list-style: none; padding: 0; margin: 0; font-size: 0.9rem; }
+.notes li { padding: 0.25rem 0; border-bottom: 1px solid var(--line); }
+table.raft-logs th, table.raft-logs td { padding: 0.25rem 0.4rem; text-align: center; min-width: 3.2rem; font-family: var(--mono); font-size: 0.8rem; }
+table.raft-logs thead th { color: var(--muted); font-weight: 400; }
+table.raft-logs tbody th { text-align: left; font-family: var(--sans); }
+table.raft-logs tr.down { opacity: 0.45; }
+table.raft-logs td.entry { border: 2px solid var(--c); border-radius: 4px; }
+table.raft-logs td.entry.committed { background: var(--c); color: var(--panel); font-weight: 700; }
+.notes .notes-head { font-weight: 700; color: var(--muted); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; }
+.notes li.fresh { color: var(--accent); font-weight: 600; }
