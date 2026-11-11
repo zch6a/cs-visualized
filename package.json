@@ -1,0 +1,23 @@
+{
+  "name": "cs-visualized",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Computer science you can step through: interactive, tested simulations of networking, operating systems, databases and distributed systems. A static site with no dependencies at runtime.",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=22.15"
+  },
+  "scripts": {
+    "build": "node scripts/build.ts",
+    "serve": "node scripts/serve.ts",
+    "dev": "node scripts/build.ts && node scripts/serve.ts --watch",
+    "test": "node --test --test-reporter=spec \"test/**/*.test.ts\"",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "check": "npm run typecheck && npm test"
+  },
+  "devDependencies": {
+    "@types/node": "^24.19.2",
+    "typescript": "^7.0.2"
+  }
+}

@@ -1,0 +1,36 @@
+// Build the site into dist/: compile src/ with tsc, copy public/ next to it. No bundler — the browser
+// loads the ES modules tsc writes.
+import { spawnSync } from "node:child_process";
+import { cpSync, existsSync, mkdirSync, readdirSync, rmSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+
+const root = join(dirname(fileURLToPath(import.meta.url)), "..");
+const dist = join(root, "dist");
+
+export function build(): boolean {
+  // Empty dist/ rather than deleting it: on Windows a folder the dev server is serving from cannot always
+  // be removed, and a failed rebuild must not take the server down with it.
+  try {
+    mkdirSync(dist, { recursive: true });
+    for (const entry of readdirSync(dist)) rmSync(join(dist, entry), { recursive: true, force: true, maxRetries: 3 });
+  } catch (e) {
+    console.error(`could not clean dist/: ${(e as Error).message}`);
+    return false;
+  }
+  const tsc = join(root, "node_modules", "typescript", "bin", "tsc");
+  if (!existsSync(tsc)) {
+    console.error("TypeScript is not installed: run `npm install` first.");
+    return false;
+  }
+  const result = spawnSync(process.execPath, [tsc, "-p", join(root, "tsconfig.json")], { stdio: "inherit" });
+  if (result.status !== 0) return false;
+  cpSync(join(root, "public"), dist, { recursive: true });
+  return true;
+}
+
+if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
+  const ok = build();
+  console.log(ok ? `built ${dist}` : "build failed");
+  process.exit(ok ? 0 : 1);
+}
