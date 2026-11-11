@@ -18,6 +18,8 @@
 // commit; here a write never blocks, and the conflict surfaces (or not) at commit.
 
 export type Level = "Read Uncommitted" | "Read Committed" | "Snapshot" | "Serializable";
+export const MAX_TRANSACTIONS = 6;
+
 export const LEVELS: readonly Level[] = ["Read Uncommitted", "Read Committed", "Snapshot", "Serializable"];
 
 export type Op =
@@ -72,14 +74,16 @@ interface Version {
   value: number;
   commitTs: number;
   tx: string | null;
+  /** Position in the schedule where it became visible (for Read Uncommitted's "newest"). */
+  at: number;
 }
 
 export function run(schedule: Schedule, level: Level): Outcome {
   const versions: Record<string, Version[]> = {};
-  for (const [k, v] of Object.entries(schedule.initial)) versions[k] = [{ value: v, commitTs: 0, tx: null }];
+  for (const [k, v] of Object.entries(schedule.initial)) versions[k] = [{ value: v, commitTs: 0, tx: null, at: -1 }];
   let clock = 0;
   const txs: Record<string, TxView & { startTs: number; readTs: Record<string, number>; written: string[] }> = {};
-  const writeOrder: { tx: string; key: string; value: number }[] = []; // for dirty reads
+  const writeOrder: { tx: string; key: string; value: number; at: number }[] = []; // for dirty reads
   const steps: Step[] = [];
 
   const latestCommitted = (key: string, before = Infinity) => {
@@ -103,8 +107,11 @@ export function run(schedule: Schedule, level: Level): Outcome {
         value = tx.writes[op.key]!;
         note = `${op.tx} sees its own write.`;
       } else if (level === "Read Uncommitted") {
-        const dirty = [...writeOrder].reverse().find((w) => w.key === op.key && txs[w.tx]!.status === "active");
+        // The newest value: the latest uncommitted write by a still-open transaction, unless a commit
+        // happened after it. (A first version preferred any open write over a newer commit.)
         const committed = latestCommitted(op.key);
+        const open = [...writeOrder].reverse().find((w) => w.key === op.key && txs[w.tx]!.status === "active");
+        const dirty = open && open.at > (committed?.at ?? -1) ? open : undefined;
         value = dirty?.value ?? committed?.value ?? 0;
         note = dirty ? `Read Uncommitted shows ${dirty.tx}'s write, which is not committed — a dirty read.` : "The newest value, committed or not.";
         tx.readTs[op.key] = committed?.commitTs ?? 0;
@@ -130,7 +137,7 @@ export function run(schedule: Schedule, level: Level): Outcome {
       const value = base + op.expr.add;
       tx.writes[op.key] = value;
       if (!tx.written.includes(op.key)) tx.written.push(op.key);
-      writeOrder.push({ tx: op.tx, key: op.key, value });
+      writeOrder.push({ tx: op.tx, key: op.key, value, at: index });
       text = `${op.tx} writes ${op.key} = ${value}`;
       note = `${op.tx}'s write is private until it commits${level === "Read Uncommitted" ? " — except under Read Uncommitted, where others can already see it" : ""}.`;
     } else if (op.kind === "abort") {
@@ -147,7 +154,7 @@ export function run(schedule: Schedule, level: Level): Outcome {
         note = `${conflict} The database aborts ${op.tx}; the application would retry it.`;
       } else {
         clock++;
-        for (const [k, v] of Object.entries(tx.writes)) (versions[k] ??= []).push({ value: v, commitTs: clock, tx: op.tx });
+        for (const [k, v] of Object.entries(tx.writes)) (versions[k] ??= []).push({ value: v, commitTs: clock, tx: op.tx, at: index });
         tx.status = "committed";
         text = `${op.tx} commits`;
         note = Object.keys(tx.writes).length ? `${op.tx}'s writes (${Object.entries(tx.writes).map(([k, v]) => `${k} = ${v}`).join(", ")}) become visible.` : `${op.tx} wrote nothing.`;
@@ -279,6 +286,10 @@ export function parseSchedule(text: string): Schedule {
     } else ops.push({ tx, kind: kind as "commit" | "abort" });
   }
   if (ops.length === 0) throw new SyntaxError("the schedule is empty");
+  // The serializability check tries every order of the committed transactions: n! of them. Six is 720
+  // orders and instant; ten would be 3.6 million and freeze the page.
+  const txCount = new Set(ops.map((o) => o.tx)).size;
+  if (txCount > MAX_TRANSACTIONS) throw new RangeError(`at most ${MAX_TRANSACTIONS} transactions (this schedule has ${txCount})`);
   return { initial, ops };
 }
 

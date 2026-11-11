@@ -165,11 +165,13 @@ export class BPlusTree {
     path.push(n.id);
     steps.push(this.step([...path], lo, [], `Range ${lo}–${hi}: descend once, to the leaf where ${lo} would be.`));
     const keys: number[] = [];
+    let reads = path.length; // the descent, including the first leaf
     for (let leaf: Node | null = n; leaf; leaf = leaf.next) {
+      if (leaf !== n) reads++;
       const inRange = leaf.keys.filter((k) => k >= lo && k <= hi);
       keys.push(...inRange);
       const done = leaf.keys.some((k) => k > hi) || !leaf.next;
-      steps.push(this.step([leaf.id], null, [], `Leaf [${leaf.keys.join(", ")}]: ${inRange.length ? `take ${inRange.join(", ")}` : "nothing in range"}. ${done ? `${leaf.next ? `A key above ${hi}: stop.` : "No more leaves: stop."} ${keys.length} keys in ${steps.length} node reads.` : "Follow the link to the next leaf — no need to go back up the tree."}`));
+      steps.push(this.step([leaf.id], null, [], `Leaf [${leaf.keys.join(", ")}]: ${inRange.length ? `take ${inRange.join(", ")}` : "nothing in range"}. ${done ? `${leaf.next ? `A key above ${hi}: stop.` : "No more leaves: stop."} ${keys.length} keys in ${reads} node reads (${path.length} on the way down, then ${reads - path.length} more leaves).` : "Follow the link to the next leaf — no need to go back up the tree."}`));
       if (done) break;
     }
     return { keys, steps };

@@ -171,11 +171,19 @@ export const transport: Topic = {
     }
 
     function drawCompare(): void {
-      const rows = PROTOCOLS.map((p) => ({ p, r: simulate(config(p)) }));
+      // Each protocol on its own: one that cannot finish under these settings must not stop the others.
+      const rows = PROTOCOLS.map((p) => {
+        try {
+          return { p, r: simulate(config(p)) };
+        } catch {
+          return { p, r: null };
+        }
+      });
       replace(compare, h("table", { class: "compare-table" },
         h("thead", {}, h("tr", {}, ...["protocol", "segments sent", "of which resent", "closed at tick"].map((c) => h("th", { scope: "col" }, c)))),
         h("tbody", {}, ...rows.map(({ p, r }) => h("tr", { class: p === protocol ? "chosen" : "" }, h("th", { scope: "row" }, p),
-          h("td", {}, String(r.transmissions)), h("td", {}, String(r.retransmissions)), h("td", {}, String(r.finishedAt)))))));
+          ...(r ? [h("td", {}, String(r.transmissions)), h("td", {}, String(r.retransmissions)), h("td", {}, String(r.finishedAt))]
+            : [h("td", { colspan: 3, class: "anomaly" }, "did not finish within 5,000 ticks")]))))));
     }
   },
 };

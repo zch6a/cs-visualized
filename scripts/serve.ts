@@ -23,7 +23,13 @@ const types: Record<string, string> = {
 };
 
 createServer((req, res) => {
-  const path = decodeURIComponent(new URL(req.url ?? "/", "http://x").pathname);
+  let path: string;
+  try {
+    path = decodeURIComponent(new URL(req.url ?? "/", "http://x").pathname);
+  } catch {
+    res.writeHead(400).end(); // a malformed URL must not take the server down
+    return;
+  }
   let file = normalize(join(dist, path));
   if (!file.startsWith(dist + sep) && file !== dist) {
     res.writeHead(403).end();

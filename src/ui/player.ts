@@ -45,8 +45,9 @@ export function createPlayer(render: (index: number) => void, options: { label?:
     if (index === count - 1) stop();
     slider.value = String(index);
     position.textContent = `step ${index + 1} of ${count}`;
-    for (const b of [first, prev]) b.disabled = index === 0;
-    for (const b of [next, last]) b.disabled = index === count - 1;
+    // aria-disabled rather than disabled: a disabled button would drop keyboard focus at the first/last step.
+    for (const b of [first, prev]) b.setAttribute("aria-disabled", String(index === 0));
+    for (const b of [next, last]) b.setAttribute("aria-disabled", String(index === count - 1));
     render(index);
   }
 
@@ -55,12 +56,15 @@ export function createPlayer(render: (index: number) => void, options: { label?:
     if (index === count - 1) go(0);
     timer = setInterval(() => go(index + 1), 1000 / speed);
     play.textContent = "❚❚";
+    // While playing, stop announcing every step to screen readers (at 8× it never stops talking).
+    position.setAttribute("aria-live", "off");
   }
 
   function stop(): void {
     clearInterval(timer);
     timer = undefined;
     play.textContent = "▶";
+    position.setAttribute("aria-live", "polite");
   }
 
   const self = {};
@@ -68,16 +72,18 @@ export function createPlayer(render: (index: number) => void, options: { label?:
   element.addEventListener("pointerdown", () => (active = self));
   element.addEventListener("focusin", () => (active = self));
 
-  // Keyboard: arrows, space, Home/End — unless the user is typing in a field.
+  // Keyboard: ← and → step from anywhere on the page (unless typing in a field). Home, End and space
+  // only when focus is inside the player — on the page they scroll, and must keep doing so.
   function onKey(e: KeyboardEvent): void {
-    if (active !== self) return;
+    if (active !== self || e.altKey || e.ctrlKey || e.metaKey) return;
     const target = e.target as HTMLElement | null;
     if (target && ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName) && target !== slider) return;
+    const inside = !!target && element.contains(target);
     if (e.key === "ArrowRight") go(index + 1);
     else if (e.key === "ArrowLeft") go(index - 1);
-    else if (e.key === "Home") go(0);
-    else if (e.key === "End") go(count - 1);
-    else if (e.key === " " && target?.tagName !== "BUTTON") (timer ? stop : start)();
+    else if (inside && e.key === "Home") go(0);
+    else if (inside && e.key === "End") go(count - 1);
+    else if (inside && e.key === " " && target?.tagName !== "BUTTON") (timer ? stop : start)();
     else return;
     e.preventDefault();
   }

@@ -61,7 +61,10 @@ export function schedule(processes: readonly Process[], algorithm: Algorithm, op
   const burst = (name: string) => processes[order.get(name)!]!.burst;
 
   let running: string | null = null;
-  let used = 0; // ticks the running process has had in its current slice
+  // Ticks each process has used of its current time slice. Kept when a process is preempted: in MLFQ
+  // a job that keeps getting interrupted must still be demoted once it has used its allotment (a first
+  // version reset it, so a long job preempted often enough stayed in the top queues forever).
+  const used: Record<string, number> = {};
   let requeue: string | null = null; // a process whose slice ended last tick, to go back after arrivals
   const ticks: Tick[] = [];
   const total = processes.reduce((n, p) => n + p.burst, 0);
@@ -85,7 +88,7 @@ export function schedule(processes: readonly Process[], algorithm: Algorithm, op
         for (const q of queues) q.length = 0;
         queues[0]!.push(...all);
         for (const n of all) levelOf[n] = 0;
-        if (running) used = 0;
+        for (const n of all) used[n] = 0;
         running = null;
         requeue = null;
         events.push("priority boost: every process back to the top queue");
@@ -97,13 +100,11 @@ export function schedule(processes: readonly Process[], algorithm: Algorithm, op
       requeue = null;
     }
     // 4. Choose who runs this tick.
-    const before: string | null = running;
     running = choose(events);
-    if (running !== before && running !== null && before === null) used = 0;
     if (running !== null) {
       firstRun[running] ??= time;
       remaining[running]! -= 1;
-      used++;
+      used[running] = (used[running] ?? 0) + 1;
     }
     const ranNow = running;
     // 5. After the tick: finished, or slice expired?
@@ -112,8 +113,8 @@ export function schedule(processes: readonly Process[], algorithm: Algorithm, op
       done++;
       events.push(`${running} finishes at ${time + 1}`);
       running = null;
-      used = 0;
-    } else if (running !== null && sliceOf(running) !== Infinity && used >= sliceOf(running)) {
+      // finished: its slice no longer matters
+    } else if (running !== null && sliceOf(running) !== Infinity && (used[running] ?? 0) >= sliceOf(running)) {
       if (algorithm === "MLFQ" && levelOf[running]! < levelCount - 1) {
         levelOf[running]! += 1;
         events.push(`${running} used its whole slice: down to queue ${levelOf[running]}`);
@@ -122,7 +123,7 @@ export function schedule(processes: readonly Process[], algorithm: Algorithm, op
       }
       requeue = running;
       running = null;
-      used = 0;
+      used[requeue] = 0; // a fresh slice next time (in its new queue, for MLFQ)
     }
     ticks.push({
       time,
@@ -168,7 +169,7 @@ export function schedule(processes: readonly Process[], algorithm: Algorithm, op
         if (running && next !== running) {
           events.push(`${next} needs less time (${remaining[next]}) than ${running} has left (${remaining[running]}): preempt`);
           queues[0]!.push(running);
-          used = 0;
+          // (no slices in SRTF: nothing to reset)
         }
         return next === running ? running : take(queues[0]!, next);
       }
@@ -178,7 +179,7 @@ export function schedule(processes: readonly Process[], algorithm: Algorithm, op
           if (top >= 0 && top < levelOf[running]!) {
             events.push(`${queues[top]![0]} in queue ${top} preempts ${running} (queue ${levelOf[running]})`);
             queues[levelOf[running]!]!.unshift(running); // keeps its place at the front of its level
-            used = 0;
+            // its used time is kept: the allotment counts across preemptions
           } else return running;
         }
         const level = queues.findIndex((q) => q.length > 0);

@@ -86,10 +86,12 @@ test("parsing reference strings", () => {
   assert.throws(() => simulate([1], 0, "FIFO"), RangeError);
 });
 
+/** Park–Miller (48271 mod 2³¹−1): every product stays below 2⁵³, so the numbers are exact. (A first
+ *  version multiplied past 2⁵³ and produced almost only zeros — the OPT test then checked nothing.) */
 function randomRefs(n: number, pages: number, seed: number): number[] {
-  let x = seed * 2654435761;
+  let x = (seed * 7919) % 2147483647 || 1;
   return Array.from({ length: n }, () => {
-    x = (x * 1103515245 + 12345) % 2 ** 31;
+    x = (x * 48271) % 2147483647;
     return x % pages;
   });
 }

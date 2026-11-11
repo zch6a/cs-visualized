@@ -21,6 +21,9 @@ function renderNav(active: string): void {
   replace(nav, ...AREAS.filter((area) => TOPICS.some((t) => t.area === area)).map((area) =>
     h("section", {}, h("h2", {}, area), h("ul", {}, ...TOPICS.filter((t) => t.area === area).map((t) =>
       h("li", {}, h("a", { href: `#/${t.id}`, "aria-current": t.id === active ? "page" : null }, t.title)))))));
+  // On a phone the list is one sideways-scrolling row: bring the current topic into view.
+  const current = nav.querySelector<HTMLElement>("[aria-current]");
+  if (current) nav.scrollLeft = current.offsetLeft - nav.clientWidth / 2 + current.offsetWidth / 2;
 }
 
 function renderHome(): void {
@@ -49,6 +52,12 @@ function route(): void {
   main.focus({ preventScroll: true });
   window.scrollTo(0, 0);
 }
+
+// "Skip to content" must not go through the hash router (#main would leave the current topic).
+document.querySelector<HTMLAnchorElement>(".skip")?.addEventListener("click", (e) => {
+  e.preventDefault();
+  main.focus();
+});
 
 window.addEventListener("hashchange", route);
 route();

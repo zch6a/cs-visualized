@@ -94,7 +94,16 @@ test("parsing and validation", () => {
 });
 
 function randomWorkload(seed: number): Process[] {
-  let x = seed * 7919;
-  const rand = (n: number) => ((x = (x * 1103515245 + 12345) % 2 ** 31), x % n);
+  let x = (seed * 7919) % 2147483647 || 1;
+  const rand = (n: number) => ((x = (x * 48271) % 2147483647), x % n); // exact: products stay below 2^53
   return Array.from({ length: 3 + rand(5) }, (_, i) => p(`P${i + 1}`, rand(12), 1 + rand(9)));
 }
+
+
+test("MLFQ counts a slice across preemptions: an often-interrupted long job is still demoted", () => {
+  // L uses 2 ticks in queue 0 (demoted), then is interrupted by a 1-tick job every other tick. It has
+  // used its 4-tick slice of queue 1 by t=8 and must drop to queue 2 there.
+  const r = schedule([p("L", 0, 12), p("a", 3, 1), p("b", 5, 1), p("c", 7, 1), p("d", 9, 1)], "MLFQ", { levels: [2, 4] });
+  assert.match(r.ticks[8]!.note, /L used its whole slice: down to queue 2/);
+  assert.equal(order(r), "L×3 a L b L c L d L×6");
+});

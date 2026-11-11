@@ -78,11 +78,14 @@ export const paging: Topic = {
 
     function run(at = 0): void {
       try {
-        refs = parseReferenceString(refsInput.value);
-        frames = Number(framesInput.value);
-        if (!Number.isInteger(frames) || frames < 1 || frames > 8) throw new RangeError("Frames must be between 1 and 8.");
-        if (refs.length === 0) throw new RangeError("Enter at least one page number.");
-        if (refs.length > 60) throw new RangeError("At most 60 references, so the table stays readable.");
+        // Validate into locals first: a rejected input must leave the run on screen intact.
+        const r = parseReferenceString(refsInput.value);
+        const f = Number(framesInput.value);
+        if (!Number.isInteger(f) || f < 1 || f > 8) throw new RangeError("Frames must be between 1 and 8.");
+        if (r.length === 0) throw new RangeError("Enter at least one page number.");
+        if (r.length > 60) throw new RangeError("At most 60 references, so the table stays readable.");
+        refs = r;
+        frames = f;
         error.textContent = "";
       } catch (e) {
         error.textContent = (e as Error).message;

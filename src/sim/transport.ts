@@ -108,7 +108,7 @@ export function simulate(c: Config): Run {
 
   send("client", "SYN", 0, {});
   for (let t = 0; finishedAt < 0 || t <= finishedAt; t++) {
-    if (t > 5000) throw new Error("simulation did not finish");
+    if (t > 5000) throw new Error("the transfer did not finish within 5,000 ticks — too much loss for this timeout and window");
     const notes: string[] = [];
     if (t === finishedAt) phase = "closed";
     // 1. Arrivals.
@@ -293,4 +293,5 @@ function validate(c: Config): void {
   int(c.delay, 1, 10, "delay");
   int(c.timeout, 2 * c.delay, 100, "timeout");
   if (c.lossRate !== undefined && !(c.lossRate >= 0 && c.lossRate <= 0.5)) throw new RangeError("loss rate must be between 0 and 0.5");
+  if (c.seed !== undefined) int(c.seed, 1, 1_000_000, "seed");
 }

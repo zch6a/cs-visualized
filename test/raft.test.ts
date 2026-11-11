@@ -157,3 +157,23 @@ function randomEvents(seed: number): Event[] {
   }
   return events;
 }
+
+
+test("a single server is its own majority; other cluster sizes stay safe", () => {
+  const one = simulate({ servers: 1, ticks: 80, seed: 1, events: parseEvents("40 client x=1") });
+  const s = one.at(-1)!.servers[0]!;
+  assert.equal(s.role, "leader");
+  assert.equal(s.commitIndex, 1, "nobody else to ask: the entry is committed at once");
+  for (const servers of [2, 3, 4, 6, 7]) {
+    for (let seed = 1; seed <= 10; seed++) {
+      const ids = ["A", "B", "C", "D", "E", "F", "G"].slice(0, servers);
+      const events = randomEvents(seed).filter((e) => (e.kind !== "crash" && e.kind !== "restart") || ids.includes(e.server)).filter((e) => e.kind !== "partition");
+      checkSafety(simulate({ servers, ticks: 250, seed, events }));
+    }
+  }
+});
+
+test("events naming a server that does not exist are refused clearly", () => {
+  assert.throws(() => simulate({ servers: 3, ticks: 50, seed: 1, events: parseEvents("10 crash D") }), /no server D/);
+  assert.throws(() => simulate({ servers: 3, ticks: 50, seed: 1, events: parseEvents("10 partition A | E") }), /no server E/);
+});

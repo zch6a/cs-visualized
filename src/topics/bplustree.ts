@@ -64,7 +64,7 @@ export const bplustree: Topic = {
       ),
       h("h2", {}, "Things to try"),
       h("ul", {},
-        h("li", {}, prose("Insert *1 to 20 in order* with order 4 and look at the leaves: every left half of a split is full and never touched again — half-empty pages. That is why databases often split sequential inserts unevenly.")),
+        h("li", {}, prose("Insert *1 to 20 in order* with order 4 and look at the leaves: every split leaves its left half with 2 of 3 keys, and nothing will ever be inserted there again — the tree stays a third empty. That is why databases often split sequential inserts unevenly, keeping the left page full.")),
         h("li", {}, prose("Raise the order to 8 with the same keys. How much shallower is the tree?")),
         h("li", {}, prose("Search for a key that is not there: the search still reads exactly one node per level — a B+ tree cannot say no any faster than it says yes.")),
       ),

@@ -88,6 +88,11 @@ export function simulate(c: Config): Frame[] {
 
   const ids = NAMES.slice(0, c.servers);
   const majority = Math.floor(ids.length / 2) + 1;
+  for (const e of c.events ?? []) {
+    const named = e.kind === "crash" || e.kind === "restart" ? [e.server] : e.kind === "partition" ? e.groups.flat() : e.kind === "client" && e.to ? [e.to] : [];
+    const unknown = named.filter((n) => !ids.includes(n));
+    if (unknown.length) throw new RangeError(`tick ${e.at}: there is no server ${unknown.join(", ")} (servers are ${ids.join(", ")})`);
+  }
   const servers: Server[] = ids.map((id) => ({
     id, role: "follower", term: 0, votedFor: null, log: [], commitIndex: 0, alive: true,
     electionDeadline: timeout(0), votes: [], nextIndex: {}, matchIndex: {},
@@ -131,6 +136,7 @@ export function simulate(c: Config): Frame[] {
         if (leader) {
           leader.log.push({ term: leader.term, command: e.command });
           leader.matchIndex[leader.id] = leader.log.length;
+          advanceCommit(leader, notes); // a cluster of one is its own majority
           notes.push(`a client sends "${e.command}" to ${leader.id}, which appends it at index ${leader.log.length} (term ${leader.term}) — not committed yet`);
         } else notes.push(`a client sends "${e.command}", but ${e.to ? `${e.to} is not a leader` : "there is no leader"}: the request fails and must be retried`);
       }
@@ -206,6 +212,19 @@ export function simulate(c: Config): Frame[] {
     lastHeartbeat[s.id] = t;
   }
 
+  /** Commit the highest index replicated on a majority — but only an entry of the current term
+   *  (committing older-term entries by counting replicas is unsafe: Figure 8 of the paper). */
+  function advanceCommit(s: Server, notes: string[]): void {
+    for (let n = s.log.length; n > s.commitIndex; n--) {
+      const replicas = ids.filter((id) => (id === s.id ? s.log.length : s.matchIndex[id] ?? 0) >= n).length;
+      if (replicas >= majority && s.log[n - 1]!.term === s.term) {
+        notes.push(`entry ${n} ("${s.log[n - 1]!.command}") is on a majority (${replicas} of ${ids.length}): ${s.id} commits it${n - s.commitIndex > 1 ? " and everything before it" : ""}`);
+        s.commitIndex = n;
+        return;
+      }
+    }
+  }
+
   function receive(s: Server, m: InFlight, t: number, notes: string[]): void {
     const msg = m.msg;
     if (msg.term > s.term) {
@@ -270,16 +289,7 @@ export function simulate(c: Config): Frame[] {
         }
         s.matchIndex[m.from] = Math.max(s.matchIndex[m.from] ?? 0, msg.matchIndex);
         s.nextIndex[m.from] = s.matchIndex[m.from]! + 1;
-        // Commit the highest index replicated on a majority — but only an entry of the current term
-        // (committing older-term entries by counting replicas is unsafe: Figure 8 of the paper).
-        for (let n = s.log.length; n > s.commitIndex; n--) {
-          const replicas = ids.filter((id) => (id === s.id ? s.log.length : s.matchIndex[id] ?? 0) >= n).length;
-          if (replicas >= majority && s.log[n - 1]!.term === s.term) {
-            notes.push(`entry ${n} ("${s.log[n - 1]!.command}") is on a majority (${replicas} of ${ids.length}): ${s.id} commits it${n - s.commitIndex > 1 ? ` and everything before it` : ""}`);
-            s.commitIndex = n;
-            break;
-          }
-        }
+        advanceCommit(s, notes);
         return;
       }
     }

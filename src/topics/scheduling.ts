@@ -11,7 +11,7 @@ const PRESETS: { name: string; text: string }[] = [
 
 const EXPLAIN: Record<Algorithm, string> = {
   FCFS: "*First come, first served*: run processes in arrival order, each to completion. Fair in a queue-at-the-bank way — and one long job makes everyone behind it wait (the *convoy effect*).",
-  SJF: "*Shortest job first*: when the CPU is free, run the waiting process with the shortest burst, to completion. Minimizes average waiting among policies that never interrupt — if you know the bursts in advance, which a real kernel does not.",
+  SJF: "*Shortest job first*: when the CPU is free, run the waiting process with the shortest burst, to completion. When every job is already waiting, no non-interrupting order has a lower average wait. (With later arrivals it can do worse: a long job that just started blocks a short one that arrives a tick later.) And it needs the bursts in advance, which a real kernel does not know.",
   SRTF: "*Shortest remaining time first*: SJF that may interrupt. Whenever a process arrives, run whichever needs the least time *now*. Provably the lowest average waiting time of any policy — and long jobs can wait forever.",
   RR: "*Round robin*: every process gets a time slice (the *quantum*) in turn, then goes to the back of the queue. Nobody waits long for a first turn; everyone finishes later than they could.",
   MLFQ: "*Multi-level feedback queue*: several queues, the top one with the shortest slice. New processes start at the top; one that uses its whole slice is demoted. Short and interactive jobs stay on top without the scheduler knowing anything in advance — the idea behind real schedulers. A periodic *boost* back to the top keeps long jobs from starving.",
@@ -87,14 +87,21 @@ export const scheduling: Topic = {
       return { quantum: Number(quantumInput.value), levels, boost: Number(boostInput.value) };
     }
 
+    let levels: number[] = [2, 4]; // the MLFQ slices of the run on screen
+
     function run(at = 0): void {
       let opts: Options;
+      // Parse and simulate into locals; the page's state changes only if everything is valid, so the
+      // player can never draw a half-updated run.
       try {
-        processes = parseProcesses(procInput.value);
-        if (processes.length > 10) throw new RangeError("At most 10 processes.");
+        const procs = parseProcesses(procInput.value);
+        if (procs.length > 10) throw new RangeError("At most 10 processes.");
         opts = options();
-        result = schedule(processes, algorithm, opts);
-        if (result.ticks.length > 120) throw new RangeError("The schedule is longer than 120 ticks — shorten the bursts.");
+        const r = schedule(procs, algorithm, opts);
+        if (r.ticks.length > 120) throw new RangeError("The schedule is longer than 120 ticks — shorten the bursts.");
+        processes = procs;
+        result = r;
+        levels = opts.levels!;
         error.textContent = "";
       } catch (e) {
         error.textContent = (e as Error).message;
@@ -129,7 +136,7 @@ export const scheduling: Topic = {
       );
       replace(gantt, table);
       replace(queueView, ...tick.queues.map((q, level) => h("div", { class: "queue" },
-        h("span", { class: "queue-label" }, algorithm === "MLFQ" ? `queue ${level}${level < tick.queues.length - 1 ? ` (slice ${options().levels![level]})` : " (to completion)"}` : "ready queue"),
+        h("span", { class: "queue-label" }, algorithm === "MLFQ" ? `queue ${level}${level < tick.queues.length - 1 ? ` (slice ${levels[level]})` : " (to completion)"}` : "ready queue"),
         ...(q.length ? q.map((n) => h("span", { class: `chip ${color(n)}` }, n, h("small", {}, ` ${tick.remaining[n]} left`))) : [h("span", { class: "empty" }, "empty")]))),
         h("div", { class: "queue" }, h("span", { class: "queue-label" }, "on the CPU"), tick.running ? h("span", { class: `chip ${color(tick.running)}` }, tick.running, h("small", {}, ` ${tick.remaining[tick.running]} left`)) : h("span", { class: "empty" }, "idle")));
       note.textContent = tick.note;

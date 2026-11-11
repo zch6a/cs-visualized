@@ -121,3 +121,17 @@ function randomSchedule(seed: number): Schedule {
   }
   return { initial: { x: 0, y: 0 }, ops };
 }
+
+
+test("Read Uncommitted returns the newest value, even when that is a commit after an open write", () => {
+  // T1 writes 1 and stays open; T2 writes 2 and commits. The newest value is 2.
+  const o = run(parseSchedule("init x=0\nT1 write x = 1\nT2 write x = 2\nT2 commit\nT3 read x\nT3 commit"), "Read Uncommitted");
+  assert.deepEqual(reads(o, "T3"), [2]);
+  const dirty = run(parseSchedule("init x=0\nT2 write x = 2\nT2 commit\nT1 write x = 1\nT3 read x\nT3 commit"), "Read Uncommitted");
+  assert.deepEqual(reads(dirty, "T3"), [1], "an open write newer than every commit is what Read Uncommitted shows");
+});
+
+test("schedules are limited to a number of transactions the serializability check can search", () => {
+  const seven = Array.from({ length: 7 }, (_, i) => `T${i + 1} read x`).join("\n");
+  assert.throws(() => parseSchedule(seven), /at most 6 transactions/);
+});

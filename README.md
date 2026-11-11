@@ -29,7 +29,7 @@ npm run dev          # build, serve on http://localhost:5173, rebuild on save
 npm test             # the simulations' tests
 ```
 
-Node 22.15 or newer. `npm run build` writes a static site to `dist/` that any web server can host.
+Node 22.18 or newer (it runs the TypeScript scripts and tests directly). `npm run build` writes a static site to `dist/` that any web server can host.
 
 ## How it is built
 
