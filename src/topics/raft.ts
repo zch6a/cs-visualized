@@ -37,7 +37,6 @@ export const raft: Topic = {
       prose("Replicate a log over a few servers and you can lose some of them without losing data — if they agree on what the log says, in what order, even while crashing and while the network drops messages. Raft does it with a leader: servers elect one, the leader orders every client command and copies it to the others, and an entry is *committed* once the leader that created it has copied it to a majority (an entry from an older term counts only together with a newer one — see the rules below). Any majority overlaps any other, so a committed entry can never be lost."),
       h("div", { class: "presets" }, "Scenario: ", ...PRESETS.map((p) => h("button", { type: "button", class: "link", onclick: () => {
         scriptInput.value = p.script;
-        about.dataset.preset = p.name;
         rerun();
       } }, p.name))),
       about,

@@ -43,7 +43,7 @@ npm test             # the simulations' tests
 npm run mutate       # test the tests: 42 deliberate bugs, each must make a test fail
 ```
 
-Node 22.18 or newer (it runs the TypeScript scripts and tests directly). `npm run build` writes a static site to `dist/` that any web server can host.
+Node 22.18 or newer (it runs the TypeScript scripts and tests directly). `npm run build` writes a static site to `dist/` — about 190 KB, no runtime dependencies — that any web server can host.
 
 ## How it is built
 

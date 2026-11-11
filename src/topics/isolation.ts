@@ -17,7 +17,7 @@ export const isolation: Topic = {
   blurb: "Dirty reads, lost updates and write skew — run the same interleaving at four isolation levels and see which anomalies each one lets through.",
   mount(root) {
     let level: Level = "Read Committed";
-    let scenario: keyof typeof SCENARIOS = "lostUpdate";
+    let scenario: keyof typeof SCENARIOS | undefined = "lostUpdate";
     let schedule: Schedule;
     let outcome: Outcome;
 
@@ -36,7 +36,7 @@ export const isolation: Topic = {
     const compare = h("div", { class: "compare" });
     const player = createPlayer(draw, { label: "Step through the schedule" });
     input.addEventListener("change", () => {
-      scenario = undefined as unknown as keyof typeof SCENARIOS;
+      scenario = undefined; // an edited schedule is no longer the preset
       rerun();
     });
 

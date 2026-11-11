@@ -81,3 +81,10 @@ the code read top to bottom, docs, first-run experience — then a local commit.
 - **Mutation testing** (`npm run mutate`, new): 42 deliberate bugs across all eight simulations — wrong victim, SJF that preempts, unbounded slow start, no fast retransmit, a lost leaf link, snapshot reads that see newer commits, a hash without its finalizer, Raft without the up-to-date vote check, without conflict truncation, without the no-op… — run in a temporary copy. All 42 make a test fail.
 - End-of-round page check: all nine pages load and step to the end without errors; the Raft catch-up scenario ends fully committed on seeds 1–4 in the page itself.
 - 77 tests.
+
+## Round 4
+
+- **Performance, measured** at each page's largest inputs (in the browser, average time to draw one step): paging 60 references × 8 frames 4.5 ms, scheduling 10 processes × 110 ticks 6.9 ms, hashing with 200 points per server 5.2 ms, the rest under 1 ms — all well inside a 16 ms frame. The heaviest recompute, the transaction page at its 6-transaction limit (every serial order, all four levels), takes about 1 ms.
+- **Code read**: the last `innerHTML` (a reset before appending) replaced by the DOM helper; a type cast that hid an optional preset (`undefined as unknown as …`) replaced by an honest optional type; an unused `dataset` write removed. Each page's parse-validate-commit `run()` repeats a dozen lines; kept inline, where it reads more plainly than a shared abstraction would.
+- **Fresh clone**: `npm install` 3 s, `npm run check` (typecheck + 77 tests) passes, `npm run build` gives a 190 KB static site (now stated in the README).
+- End-of-round page check: all nine pages load and step to the end without errors; an edited schedule on the transaction page shows "Your own schedule." as intended.

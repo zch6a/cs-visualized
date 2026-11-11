@@ -120,8 +120,7 @@ export const bplustree: Topic = {
     function draw(index: number): void {
       const step = steps[index]!;
       replace(drawing, renderTree(step.tree, step, mode));
-      note.innerHTML = "";
-      note.append(prose(step.note));
+      replace(note, prose(step.note));
     }
   },
 };
