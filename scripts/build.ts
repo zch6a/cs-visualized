@@ -8,12 +8,14 @@ import { fileURLToPath } from "node:url";
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const dist = join(root, "dist");
 
-export function build(): boolean {
-  // Empty dist/ rather than deleting it: on Windows a folder the dev server is serving from cannot always
-  // be removed, and a failed rebuild must not take the server down with it.
+/** `clean: true` (a release build) empties dist/ first. The dev server rebuilds without cleaning, and
+ *  tsc writes nothing when there is a type error (`noEmitOnError`), so a broken edit leaves the last good
+ *  build in place instead of an empty folder. */
+export function build({ clean = false } = {}): boolean {
   try {
     mkdirSync(dist, { recursive: true });
-    for (const entry of readdirSync(dist)) rmSync(join(dist, entry), { recursive: true, force: true, maxRetries: 3 });
+    // Empty rather than delete: on Windows a folder being served cannot always be removed.
+    if (clean) for (const entry of readdirSync(dist)) rmSync(join(dist, entry), { recursive: true, force: true, maxRetries: 3 });
   } catch (e) {
     console.error(`could not clean dist/: ${(e as Error).message}`);
     return false;
@@ -30,7 +32,7 @@ export function build(): boolean {
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
-  const ok = build();
+  const ok = build({ clean: true });
   console.log(ok ? `built ${dist}` : "build failed");
   process.exit(ok ? 0 : 1);
 }

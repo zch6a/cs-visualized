@@ -181,3 +181,30 @@ table.gantt td.future { background: none; }
 .key.ghost::before { border-top: 2px solid var(--muted); opacity: 0.5; }
 .key.loss::before { width: 0.6rem; height: 0.6rem; border: none; border-radius: 50%; background: var(--fault-text); }
 .key.timeout::before { width: 0.5rem; height: 0.5rem; border: 2px solid var(--fault-text); border-radius: 50%; }
+/* sequence diagram and windows */
+.chart.sequence { max-height: 70vh; overflow-y: auto; }
+.chart .lane { stroke: var(--muted); stroke-width: 2; }
+.chart .lane-name { font-weight: 700; font-size: 13px; fill: var(--text); }
+.chart .now-line { stroke: var(--accent); stroke-width: 1; stroke-dasharray: 3 3; }
+.chart .msg line { stroke-width: 1.6; }
+.chart .msg.data line { stroke: var(--accent); }
+.chart .msg.ack line { stroke: var(--hit-text); }
+.chart .msg.control line { stroke: var(--warn); }
+.chart .msg.again line { stroke-dasharray: 5 3; }
+.chart .msg.lost line { stroke: var(--fault-text); }
+.chart .msg circle { fill: var(--text); }
+.chart .msg text.label { font-size: 10px; }
+.chart .cross { fill: var(--fault-text); font-size: 14px; font-weight: 700; text-anchor: middle; }
+.windows { display: flex; flex-direction: column; gap: 0.35rem; margin: 0.6rem 0; }
+.strip { display: flex; flex-wrap: wrap; align-items: center; gap: 0.2rem; }
+.strip-label { color: var(--muted); font-size: 0.85rem; min-width: 12rem; }
+.cell { display: inline-block; min-width: 1.8rem; text-align: center; border: 1.5px solid var(--line); border-radius: 4px; font-size: 0.8rem; font-variant-numeric: tabular-nums; padding: 0.05rem 0; color: var(--muted); }
+.cell.acked { background: var(--hit); color: var(--hit-text); border-color: var(--hit-text); }
+.cell.inflight { border-color: var(--accent); color: var(--accent); font-weight: 700; }
+.cell.usable { border-style: dashed; border-color: var(--accent); }
+.cell.buffered { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); }
+.dot::before { content: ""; display: inline-block; width: 0.75rem; height: 0.75rem; border-radius: 3px; margin-right: 0.35rem; vertical-align: -1px; border: 1.5px solid var(--line); }
+.dot.acked::before { background: var(--hit); border-color: var(--hit-text); }
+.dot.inflight::before { border-color: var(--accent); }
+.dot.usable::before { border: 1.5px dashed var(--accent); }
+.dot.buffered::before { background: var(--accent-soft); border-color: var(--accent); }

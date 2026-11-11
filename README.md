@@ -15,7 +15,7 @@ LRU 12, OPT 9 faults on Silberschatz's reference string) and against the propert
 | Operating systems | Page replacement: FIFO, LRU, OPT, Clock, Bélády's anomaly | ✅ |
 | Operating systems | CPU scheduling: FCFS, SJF, SRTF, round robin, MLFQ with boost | ✅ |
 | Networking | TCP congestion control: slow start, AIMD, Tahoe vs Reno, why AIMD is fair | ✅ |
-| Networking | TCP connection: handshake, sliding window, loss and retransmission | planned |
+| Networking | Reliable delivery: handshake, sliding window, Go-Back-N, Selective Repeat, fast retransmit | ✅ |
 | Databases | B+ tree: search, insert, split | planned |
 | Databases | Transactions: isolation levels and their anomalies | planned |
 | Distributed systems | Consistent hashing: the ring, virtual nodes, rebalancing | planned |
