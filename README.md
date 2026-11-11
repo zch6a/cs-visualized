@@ -17,7 +17,7 @@ LRU 12, OPT 9 faults on Silberschatz's reference string) and against the propert
 | Networking | TCP congestion control: slow start, AIMD, Tahoe vs Reno, why AIMD is fair | ✅ |
 | Networking | Reliable delivery: handshake, sliding window, Go-Back-N, Selective Repeat, fast retransmit | ✅ |
 | Databases | B+ tree: insert with splits, search, range scans along the leaf links | ✅ |
-| Databases | Transactions: isolation levels and their anomalies | planned |
+| Databases | Transaction isolation: dirty reads, lost updates, write skew at four levels, with a serializability check | ✅ |
 | Distributed systems | Consistent hashing: the ring, virtual nodes, rebalancing | planned |
 | Distributed systems | Raft: leader election and log replication | planned |
 
