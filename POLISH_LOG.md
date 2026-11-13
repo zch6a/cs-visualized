@@ -117,3 +117,9 @@ the code read top to bottom, docs, first-run experience — then a local commit.
 ## Lockfile - 2026-11-13
 
 `package-lock.json` recorded the 23 download URLs from this machine's npm mirror (`registry.npmmirror.com`) instead of the public registry, so CI and anyone installing fetched from a mirror they never chose. Every `resolved` URL now points at `registry.npmjs.org`; nothing else changed (same versions, and the integrity hashes still match because the tarballs are identical). Checked: `npm ci --ignore-scripts`, `npm run check` and the tests pass; `npm audit` against the public registry finds 0 vulnerabilities.
+
+### 2026-11-14 — Chinese README: AI tone
+
+- 5 places, one kind: semicolons joining long independent clauses split into full stops (the numbers intro, the congestion, hashing and Raft bullets).
+- The checks follow the findings of lieflat-less-ai-tone (shiujan, CC BY-NC 4.0); its findings applied, its text not copied.
+- Left as they are: the bold-label dashes that open each table cell and list item (structure), enumerations that must be complete (the B+ tree invariants, table cells), the short semicolons inside parentheses.
