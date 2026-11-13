@@ -113,3 +113,7 @@ the code read top to bottom, docs, first-run experience — then a local commit.
 - **Publishing**: banner (English and Chinese), README rewritten with badges and a language switch, a full Chinese README, a CI workflow (Ubuntu, Windows and macOS × Node 22 and 24), a GitHub Pages workflow for the live demo, package metadata, CHANGELOG.
 - End-of-round page check: all nine pages load and step to the end without errors. On the page itself, the Raft tick check, the congestion error and the fairness plot at 100 behave as described. The page stays at the same height while stepping, and live notes switch off while playing and back on when stopped.
 - 80 tests, 40 of 40 mutants caught.
+
+## Lockfile - 2026-11-13
+
+`package-lock.json` recorded the 23 download URLs from this machine's npm mirror (`registry.npmmirror.com`) instead of the public registry, so CI and anyone installing fetched from a mirror they never chose. Every `resolved` URL now points at `registry.npmjs.org`; nothing else changed (same versions, and the integrity hashes still match because the tarballs are identical). Checked: `npm ci --ignore-scripts`, `npm run check` and the tests pass; `npm audit` against the public registry finds 0 vulnerabilities.
