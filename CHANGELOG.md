@@ -1,5 +1,34 @@
 # Changelog
 
+## 0.2.0 — fixes from an independent review
+
+The simulations themselves held up: fuzzed against reference implementations and invariant checks
+(paging, scheduling, serializability, the B+ tree, transport, Raft's safety properties), and every
+number in the READMEs reproduced. The fixes are around them.
+
+**Fixes**
+
+- **Isolation**: an operation skipped because its transaction had already committed was still replayed
+  when looking for a serial order, so `T1 read x / T1 commit / T1 read x` was called "not serializable".
+- **TCP congestion**: after one rejected input (a link capacity of 3), every step of the player threw and
+  the chart stopped moving; it now keeps showing the last good run.
+- **Page replacement**: choosing a policy while the input was invalid drew the old run with the new
+  policy's marks (Clock's reference bits on an LRU run) and left the old button pressed. The choice now
+  changes only when the run does.
+- **Raft**: a seed of 0 or below gave election timeouts shorter than a round trip (seed −1: no leader in
+  200 ticks); the page and the simulation refuse it. A "things to try" item pointed at the wrong preset
+  for the failed election (it is in *Catch up after a crash*).
+- **Inputs**: the B+ tree's order (3–8, as the box says), the number of servers for consistent hashing
+  and MLFQ's boost period are checked instead of silently accepted.
+- **Accessibility**: de-emphasised text (future steps, crashed servers) is a colour with 4.5:1 contrast
+  instead of faded with opacity (it was 2–2.9:1); two palette colours darkened to at least 3:1; the step
+  slider says "step 3 of 60" to a screen reader instead of "2".
+- **Hardening**: a Content-Security-Policy (scripts and styles from the site only; inline styles go
+  through the CSSOM); the preview server listens on 127.0.0.1 only, refuses paths with ":" (Windows data
+  streams) and handles a read error.
+- **Mutation testing** copies the workflows too (the workflow test added in the CI hardening made every
+  run fail) and has two new mutants for the fixes: 42 of 42 caught.
+
 ## 0.1.0 — first release
 
 Eight interactive, step-through simulations in a static site with no runtime dependencies.

@@ -25,6 +25,7 @@ function setAttrs(el: Element, attrs: Attrs): void {
   for (const [key, value] of Object.entries(attrs)) {
     if (value === null || value === undefined || value === false) continue;
     if (typeof value === "function") el.addEventListener(key.replace(/^on/, ""), value);
+    else if (key === "style") (el as HTMLElement | SVGElement).style.cssText = String(value); // CSSOM: allowed by the CSP
     else el.setAttribute(key, value === true ? "" : String(value));
   }
 }

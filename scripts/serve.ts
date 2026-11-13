@@ -31,7 +31,8 @@ createServer((req, res) => {
     return;
   }
   let file = normalize(join(dist, path));
-  if (!file.startsWith(dist + sep) && file !== dist) {
+  // ":" would reach Windows' alternate data streams (style.css::$DATA); no file of the site has one.
+  if ((!file.startsWith(dist + sep) && file !== dist) || path.includes(":")) {
     res.writeHead(403).end();
     return;
   }
@@ -42,9 +43,12 @@ createServer((req, res) => {
     res.writeHead(404, { "content-type": "text/plain" }).end("not found");
     return;
   }
-  res.writeHead(200, { "content-type": types[extname(file)] ?? "application/octet-stream", "cache-control": "no-store" });
-  createReadStream(file).pipe(res);
-}).listen(port, () => console.log(`serving dist/ on http://localhost:${port}`));
+  res.writeHead(200, { "content-type": types[extname(file).toLowerCase()] ?? "application/octet-stream", "cache-control": "no-store" });
+  createReadStream(file)
+    .on("error", () => res.destroy())
+    .pipe(res);
+  // This computer only: a preview server has no business answering the rest of the network.
+}).listen(port, "127.0.0.1", () => console.log(`serving dist/ on http://localhost:${port}`));
 
 if (process.argv.includes("--watch")) {
   let timer: ReturnType<typeof setTimeout> | undefined;

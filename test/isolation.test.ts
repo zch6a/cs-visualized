@@ -150,3 +150,12 @@ test("matching every read is not enough: a serial order must also give the final
   assert.equal(o.final.x, 1);
   assert.equal(o.serialOrder, null);
 });
+
+test("an operation skipped after its transaction ended does not count against serializability", () => {
+  // The replay of the serial order used to include the skipped read, and called this "not serializable".
+  for (const level of LEVELS) {
+    const o = run(parseSchedule("init x=1\nT1 read x\nT1 commit\nT1 read x"), level);
+    assert.equal(o.steps.at(-1)!.skipped, true, level);
+    assert.deepEqual(o.serialOrder, ["T1"], level);
+  }
+});

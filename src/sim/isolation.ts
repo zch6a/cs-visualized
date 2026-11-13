@@ -169,7 +169,10 @@ export function run(schedule: Schedule, level: Level): Outcome {
     tx.abortReason = "never committed";
   }
   const final = committedState();
-  return { steps, final, txs: viewTxs(), serialOrder: findSerialOrder(schedule, txs, final) };
+  // Only the operations that ran: one after its transaction ended is skipped, and replaying it anyway
+  // made `T1 read x / T1 commit / T1 read x` "not serializable".
+  const ran = steps.filter((st) => !st.skipped).map((st) => st.op);
+  return { steps, final, txs: viewTxs(), serialOrder: findSerialOrder(ran, schedule.initial, txs, final) };
 
   function validate(name: string): string | null {
     const tx = txs[name]!;
@@ -204,16 +207,16 @@ function lastRead(tx: TxView, key: string): number | undefined {
 
 /** Could this outcome have come from running the committed transactions one after another? Try every
  *  order: each must reproduce every read the committed transactions made, and the final state. */
-function findSerialOrder(schedule: Schedule, txs: Record<string, TxView>, final: Record<string, number>): string[] | null {
+function findSerialOrder(ops: Op[], initial: Schedule["initial"], txs: Record<string, TxView>, final: Record<string, number>): string[] | null {
   const committed = Object.keys(txs).filter((n) => txs[n]!.status === "committed");
   for (const order of permutations(committed)) {
-    const db = { ...schedule.initial };
+    const db = { ...initial };
     let ok = true;
     for (const name of order) {
       const local: Record<string, number> = {};
       const seen: Record<string, number> = {};
       const reads: number[] = [];
-      for (const op of schedule.ops.filter((o) => o.tx === name)) {
+      for (const op of ops.filter((o) => o.tx === name)) {
         if (op.kind === "read") {
           const v = local[op.key] ?? db[op.key] ?? 0;
           reads.push(v);

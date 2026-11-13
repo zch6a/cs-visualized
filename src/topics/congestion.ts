@@ -88,6 +88,7 @@ export const congestion: Topic = {
       ),
     );
 
+    let capacity = Infinity;
     run();
     fairPlayer.load(fairSteps.length);
     return () => {
@@ -109,8 +110,10 @@ export const congestion: Topic = {
 
     function run(at = 0): void {
       try {
-        rounds = simulate(scenario(variant));
+        const sc = scenario(variant);
+        rounds = simulate(sc);
         other = simulate(scenario(variant === "Reno" ? "Tahoe" : "Reno"));
+        capacity = sc.capacity; // what draw() shows: the last good run, not whatever is in the box now
         error.textContent = "";
       } catch (e) {
         error.textContent = (e as Error).message;
@@ -121,7 +124,7 @@ export const congestion: Topic = {
     }
 
     function draw(index: number): void {
-      const cap = scenario(variant).capacity;
+      const cap = capacity;
       const yMax = Math.max(cap * 1.3, ...rounds.map((r) => r.cwnd), ...rounds.map((r) => r.ssthresh)) + 2;
       const x = (round: number) => PAD.left + ((round - 1) / Math.max(1, rounds.length - 1)) * (W - PAD.left - PAD.right);
       const y = (v: number) => H - PAD.bottom - (v / yMax) * (H - PAD.top - PAD.bottom);

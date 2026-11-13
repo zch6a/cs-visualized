@@ -85,6 +85,9 @@ export const NOOP = "no-op";
 export function simulate(c: Config): Frame[] {
   if (!Number.isInteger(c.servers) || c.servers < 1 || c.servers > 7) throw new RangeError("servers must be 1 to 7");
   if (!Number.isInteger(c.ticks) || c.ticks < 1 || c.ticks > 2000) throw new RangeError("ticks must be 1 to 2000");
+  // A seed of 0 or below made the generator return negative numbers: election timeouts shorter than a
+  // round trip, and with seed −1 no leader in 200 ticks.
+  if (!Number.isInteger(c.seed) || c.seed < 1) throw new RangeError("seed must be a whole number from 1");
   const delay = c.delay ?? 2;
   const [tMin, tMax] = c.electionTimeout ?? [12, 24];
   const heartbeat = c.heartbeat ?? 4;

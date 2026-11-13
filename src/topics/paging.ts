@@ -31,8 +31,7 @@ export const paging: Topic = {
     const framesInput = h("input", { type: "number", min: 1, max: 8, value: frames, "aria-label": "Frames" });
     const error = h("p", { class: "error", role: "alert" });
     const policyButtons = POLICIES.map((p) => h("button", { type: "button", class: "segment", "aria-pressed": String(p === policy), onclick: () => {
-      policy = p;
-      run(player.index);
+      run(player.index, p);
     } }, p));
     const explain = h("div", { class: "explain" });
     const grid = h("div", { class: "grid-scroll" });
@@ -76,7 +75,7 @@ export const paging: Topic = {
     run();
     return () => player.destroy();
 
-    function run(at = 0): void {
+    function run(at = 0, next: Policy = policy): void {
       try {
         // Validate into locals first: a rejected input must leave the run on screen intact.
         const r = parseReferenceString(refsInput.value);
@@ -86,6 +85,7 @@ export const paging: Topic = {
         if (r.length > 60) throw new RangeError("At most 60 references, so the table stays readable.");
         refs = r;
         frames = f;
+        policy = next;
         error.textContent = "";
       } catch (e) {
         error.textContent = (e as Error).message;

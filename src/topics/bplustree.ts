@@ -79,6 +79,7 @@ export const bplustree: Topic = {
         if (keys.length === 0) throw new RangeError("Enter some keys.");
         if (keys.length > 60) throw new RangeError("At most 60 keys, so the tree fits on screen.");
         const order = Number(orderInput.value);
+        if (!Number.isInteger(order) || order < 3 || order > 8) throw new RangeError("Order: a whole number from 3 to 8.");
         const result = build(order, keys);
         tree = result.tree;
         steps = result.steps;

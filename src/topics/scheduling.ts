@@ -86,7 +86,9 @@ export const scheduling: Topic = {
     function options(): Options {
       const levels = levelsInput.value.trim().split(/[\s,]+/).filter(Boolean).map(Number);
       if (levels.some((l) => !Number.isInteger(l) || l < 1) || levels.length < 1 || levels.length > 4) throw new RangeError("Slices per level: one to four whole numbers, e.g. \"2 4\".");
-      return { quantum: Number(quantumInput.value), levels, boost: Number(boostInput.value) };
+      const boost = Number(boostInput.value);
+      if (!Number.isInteger(boost) || boost < 0 || boost > 200) throw new RangeError("Boost every: a whole number of ticks from 0 (never) to 200.");
+      return { quantum: Number(quantumInput.value), levels, boost };
     }
 
     function run(at = 0): void {

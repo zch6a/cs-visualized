@@ -231,3 +231,8 @@ test("a new leader commits earlier entries through its no-op, without waiting fo
     }
   }
 });
+
+test("a seed below 1 is refused instead of giving election timeouts shorter than a round trip", () => {
+  for (const seed of [0, -1, 1.5]) assert.throws(() => simulate({ servers: 5, ticks: 10, seed, events: [] }), /seed/, String(seed));
+  assert.equal(simulate({ servers: 5, ticks: 200, seed: 1, events: [] }).at(-1)!.servers.filter((s) => s.role === "leader").length, 1);
+});

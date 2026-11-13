@@ -53,6 +53,8 @@ const MUTANTS: [file: string, original: string, mutant: string][] = [
   ["bplustree.ts", "if (n.keys.includes(key)) {", "if (false) {"],
   // isolation
   ["isolation.ts", "const v = latestCommitted(op.key, tx.startTs);", "const v = latestCommitted(op.key);"],
+  ["isolation.ts", "const ran = steps.filter((st) => !st.skipped).map((st) => st.op);", "const ran = schedule.ops;"],
+  ["raft.ts", "if (!Number.isInteger(c.seed) || c.seed < 1) throw", "if (false) throw"],
   ["isolation.ts", "if (v && v.commitTs > tx.startTs) return `${v.tx} committed a write", "if (false) return `${v?.tx} committed a write"],
   ["isolation.ts", "for (const k of Object.keys(tx.readTs)) {", "for (const k of [] as string[]) {"],
   ["isolation.ts", "if (op.key in tx.writes) {", "if (false) {"],
@@ -77,6 +79,7 @@ const survived: string[] = [];
 try {
   cpSync(join(root, "src"), join(tmp, "src"), { recursive: true });
   cpSync(join(root, "test"), join(tmp, "test"), { recursive: true });
+cpSync(join(root, ".github"), join(tmp, ".github"), { recursive: true }); // test/workflows.test.ts reads the workflows
   writeFileSync(join(tmp, "package.json"), JSON.stringify({ type: "module" }));
   // The unmutated suite must pass first. (A first version passed "test/" to node --test, which Node 24
   // treats as a module name: every run failed, so every mutant counted as "caught".)

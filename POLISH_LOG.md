@@ -123,3 +123,26 @@ the code read top to bottom, docs, first-run experience — then a local commit.
 - 5 places, one kind: semicolons joining long independent clauses split into full stops (the numbers intro, the congestion, hashing and Raft bullets).
 - The checks follow the findings of lieflat-less-ai-tone (shiujan, CC BY-NC 4.0); its findings applied, its text not copied.
 - Left as they are: the bold-label dashes that open each table cell and list item (structure), enumerations that must be complete (the B+ tree invariants, table cells), the short semicolons inside parentheses.
+
+## Cycle 2, round 1 (2026-11-14) — 0.2.0
+
+- **CI hardening** (done earlier while another review ran, pushed since): actions pinned, no token in the
+  checkout, `npm ci --ignore-scripts`; Pages split into a read-only build job and a deploy job that runs no
+  project code; `test/workflows.test.ts` keeps it so. CI and Pages green.
+- **Independent review** (fresh agent, temp copy, offline, served on 127.0.0.1): fuzzed each simulation
+  against a reference or invariant checker (3,000 paging runs, 2,000 scheduling, 30,000 serializability
+  checks, 1,500 B+ tree, 1,500 transport, 600 Raft) with no correctness failure; every README number
+  reproduced. Eight confirmed defects, all fixed (see CHANGELOG 0.2.0): the isolation verdict replaying
+  skipped operations; the congestion player crashing on every step after one bad input (`draw` re-read
+  the inputs); paging drawing a new policy's marks on the old run; the Raft seed; a wrong preset named
+  in Raft's "things to try"; contrast of faded text (2–2.9:1) and two swatches; no CSP; the preview
+  server on all interfaces. Smaller: three unchecked inputs, the slider's screen-reader value.
+- Not changed, noted: a Raft failure reply does not say which prevIndex it answers, so two refusals can
+  move nextIndex back twice in one tick (wasted work, not unsafe); messages in flight are dropped when
+  their sender crashes (documented as such); the URL keeps only the topic, not the inputs.
+- **Checks**: 84 tests (two new, each failing on the old code's behaviour); type check; `npm run mutate`
+  42 of 42 (it had been failing since the workflow test: the temporary copy lacked `.github/`); build;
+  in the browser: the congestion repro steps on with the error shown, paging keeps LRU pressed with no
+  Clock marks, seed −1 is refused, bars and the tree's width still apply under the CSP, no console errors
+  on any page. Contrast computed: faint text 4.7:1 (light), 4.8:1 (dark); swatches 3.8:1 and 4.1:1.
+  `npm audit` (public registry): 0 vulnerabilities.

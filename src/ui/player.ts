@@ -45,6 +45,7 @@ export function createPlayer(render: (index: number) => void, options: { label?:
     if (index === count - 1) stop();
     slider.value = String(index);
     position.textContent = `step ${index + 1} of ${count}`;
+    slider.setAttribute("aria-valuetext", position.textContent); // the value is 0-based; say "step 1", not "0"
     // aria-disabled rather than disabled: a disabled button would drop keyboard focus at the first/last step.
     for (const b of [first, prev]) b.setAttribute("aria-disabled", String(index === 0));
     for (const b of [next, last]) b.setAttribute("aria-disabled", String(index === count - 1));

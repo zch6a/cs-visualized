@@ -60,7 +60,7 @@ export const raft: Topic = {
       ),
       h("h2", {}, "Things to try"),
       h("ul", {},
-        h("li", {}, prose("In *The leader crashes*, look for the election that fails: two candidates in the same term split the votes, nobody has a majority, and a later term decides. Randomized timeouts make this rare, not impossible.")),
+        h("li", {}, prose("In *Catch up after a crash*, look for the election that fails: two candidates in the same term split the votes, nobody has a majority, and a later term decides. Randomized timeouts make this rare, not impossible.")),
         h("li", {}, prose("Change the seed: a different server wins the first election. Why must the protocol work whichever one it is?")),
         h("li", {}, prose("Crash three of five servers (`60 crash FOLLOWER` on three lines, at ticks 60, 61 and 62) and send `70 client z`: it can be appended, never committed. Add `110 restart CRASHED`: it commits.")),
         h("li", {}, prose("In *Split brain*, send a command to each side. Which one ends up in every log, and why can the other never be committed?")),
@@ -76,6 +76,8 @@ export const raft: Topic = {
       try {
         const n = Number(serversInput.value);
         if (!Number.isInteger(n) || n < 3 || n > 7) throw new RangeError("Servers: 3 to 7.");
+        const seed = Number(seedInput.value);
+        if (!Number.isInteger(seed) || seed < 1 || seed > 9999) throw new RangeError("Seed: a whole number from 1 to 9999.");
         const ids = ["A", "B", "C", "D", "E", "F", "G"].slice(0, n);
         // Resolve the shorthand line by line, in tick order: probe-run everything before the line, see who
         // leads, who follows and who crashed last, and substitute — for that line only.
@@ -95,7 +97,7 @@ export const raft: Topic = {
           const at = tickOf(line);
           if (!Number.isInteger(at) || at < 1 || at >= 200) throw new SyntaxError(`"${line}": the tick must be a whole number from 1 to 199`);
           const before = resolved.filter((l) => tickOf(l) < at);
-          const probe = simulate({ servers: n, ticks: at, seed: Number(seedInput.value), events: parseEvents(before.join("\n")) }).at(-1)!;
+          const probe = simulate({ servers: n, ticks: at, seed, events: parseEvents(before.join("\n")) }).at(-1)!;
           const live = probe.servers.filter((x) => x.alive);
           const leader = live.filter((x) => x.role === "leader").sort((x, y) => y.term - x.term)[0]?.id;
           // A real follower if there is one; otherwise (mid-election) any live server that is not the leader.
@@ -124,7 +126,7 @@ export const raft: Topic = {
           resolved.push(out);
         }
         const script = resolved.join("\n");
-        frames = simulate({ servers: n, ticks: 200, seed: Number(seedInput.value), events: parseEvents(script) });
+        frames = simulate({ servers: n, ticks: 200, seed, events: parseEvents(script) });
         error.textContent = "";
       } catch (e) {
         error.textContent = (e as Error).message;

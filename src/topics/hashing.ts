@@ -62,7 +62,9 @@ export const hashing: Topic = {
       const vnodes = Number(vnodeInput.value);
       vnodeLabel.textContent = ` ${vnodes}`;
       try {
-        servers = NAMES.slice(0, Number(countInput.value));
+        const count = Number(countInput.value);
+        if (!Number.isInteger(count) || count < 2 || count > 8) throw new RangeError("Servers at the start: 2 to 8.");
+        servers = NAMES.slice(0, count);
         const changes = parseChanges(changesInput.value);
         steps = replay(servers, changes, vnodes, KEYS);
         error.textContent = "";
